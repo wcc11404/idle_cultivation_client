@@ -15,7 +15,7 @@ func run_tests():
 	test_item_data = load("res://scripts/core/ItemData.gd").new()
 	add_child(test_item_data)
 	
-	test_inventory = load("res://scripts/core/Inventory.gd").new()
+	test_inventory = load("res://scripts/core/inventory/Inventory.gd").new()
 	test_inventory.item_data = test_item_data
 	add_child(test_inventory)
 	
@@ -110,7 +110,7 @@ func test_save_load():
 			stone_count_in_save += slot.get("count", 0)
 	helper.assert_eq(stone_count_in_save, 500, "Inventory", "灵石数量保存正确")
 	
-	var new_inventory = load("res://scripts/core/Inventory.gd").new()
+	var new_inventory = load("res://scripts/core/inventory/Inventory.gd").new()
 	new_inventory.item_data = test_item_data
 	new_inventory.apply_save_data(inventory_data)
 	

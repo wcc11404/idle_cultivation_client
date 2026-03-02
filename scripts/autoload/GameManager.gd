@@ -50,42 +50,42 @@ func init_systems():
 	account_system.login_success.connect(_on_account_login_success)
 	print("账号系统初始化完成")
 	
-	item_data = load("res://scripts/core/ItemData.gd").new()
+	item_data = load("res://scripts/core/inventory/ItemData.gd").new()
 	item_data.name = "ItemData"
 	add_child(item_data)
 	print("物品数据初始化完成")
 	
-	lianli_area_data = load("res://scripts/core/LianliAreaData.gd").new()
+	lianli_area_data = load("res://scripts/core/lianli/LianliAreaData.gd").new()
 	lianli_area_data.name = "LianliAreaData"
 	add_child(lianli_area_data)
 	print("历练区域数据初始化完成")
 	
-	enemy_data = load("res://scripts/core/EnemyData.gd").new()
+	enemy_data = load("res://scripts/core/lianli/EnemyData.gd").new()
 	enemy_data.name = "EnemyData"
 	add_child(enemy_data)
 	print("敌人数据初始化完成")
 	
-	realm_system = load("res://scripts/core/RealmSystem.gd").new()
+	realm_system = load("res://scripts/core/realm/RealmSystem.gd").new()
 	realm_system.name = "RealmSystem"
 	add_child(realm_system)
 	print("境界系统初始化完成")
 	
-	inventory = load("res://scripts/core/Inventory.gd").new()
+	inventory = load("res://scripts/core/inventory/Inventory.gd").new()
 	inventory.name = "Inventory"
 	add_child(inventory)
 	print("储纳系统初始化完成")
 	
-	cultivation_system = load("res://scripts/core/CultivationSystem.gd").new()
+	cultivation_system = load("res://scripts/core/realm/CultivationSystem.gd").new()
 	cultivation_system.name = "CultivationSystem"
 	add_child(cultivation_system)
 	print("修炼系统初始化完成")
 	
-	endless_tower_data = load("res://scripts/core/EndlessTowerData.gd").new()
+	endless_tower_data = load("res://scripts/core/lianli/EndlessTowerData.gd").new()
 	endless_tower_data.name = "EndlessTowerData"
 	add_child(endless_tower_data)
 	print("无尽塔数据初始化完成")
 	
-	lianli_system = load("res://scripts/core/LianliSystem.gd").new()
+	lianli_system = load("res://scripts/core/lianli/LianliSystem.gd").new()
 	lianli_system.name = "LianliSystem"
 	add_child(lianli_system)
 	lianli_system.set_lianli_area_data(lianli_area_data)

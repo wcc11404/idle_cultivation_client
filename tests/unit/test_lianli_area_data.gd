@@ -7,7 +7,7 @@ func _ready():
 	helper = load("res://tests/test_helper.gd").new()
 	add_child(helper)
 	
-	lianli_area_data = load("res://scripts/core/LianliAreaData.gd").new()
+	lianli_area_data = load("res://scripts/core/lianli/LianliAreaData.gd").new()
 	add_child(lianli_area_data)
 
 func run_tests():

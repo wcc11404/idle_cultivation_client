@@ -1,6 +1,6 @@
 extends TestBase
 
-const ItemData = preload("res://scripts/core/ItemData.gd")
+const ItemData = preload("res://scripts/core/inventory/ItemData.gd")
 
 # 测试炼丹系统数据配置
 

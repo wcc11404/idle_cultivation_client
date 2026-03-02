@@ -11,7 +11,7 @@ func run_tests():
 	print("\n=== RealmSystem 单元测试 ===")
 	helper.reset_stats()
 	
-	test_realm_system = load("res://scripts/core/RealmSystem.gd").new()
+	test_realm_system = load("res://scripts/core/realm/RealmSystem.gd").new()
 	add_child(test_realm_system)
 	
 	test_initialization()

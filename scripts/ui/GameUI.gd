@@ -777,9 +777,9 @@ func show_lianli_tab():
 	if endless_tower_button and lianli_module:
 		lianli_module.update_endless_tower_button_text(endless_tower_button)
 
-	# 检查是否处于历练中（战斗中或等待中）
+	# 检查是否处于历练中
 	if lianli_module:
-		if lianli_system and (lianli_system.is_in_battle or lianli_system.is_waiting or lianli_system.is_in_lianli):
+		if lianli_system and lianli_system.is_in_lianli:
 			# 还在历练中，显示战斗场景
 			lianli_module.show_lianli_scene_panel()
 		else:

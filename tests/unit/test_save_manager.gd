@@ -20,10 +20,10 @@ func run_tests():
 	test_player = load("res://scripts/core/PlayerData.gd").new()
 	add_child(test_player)
 	
-	test_item_data = load("res://scripts/core/ItemData.gd").new()
+	test_item_data = load("res://scripts/core/inventory/ItemData.gd").new()
 	add_child(test_item_data)
 	
-	test_inventory = load("res://scripts/core/Inventory.gd").new()
+	test_inventory = load("res://scripts/core/inventory/Inventory.gd").new()
 	test_inventory.item_data = test_item_data
 	add_child(test_inventory)
 	

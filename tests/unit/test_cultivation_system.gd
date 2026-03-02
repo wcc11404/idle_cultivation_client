@@ -15,7 +15,7 @@ func run_tests():
 	test_player = load("res://scripts/core/PlayerData.gd").new()
 	add_child(test_player)
 	
-	test_cultivation = load("res://scripts/core/CultivationSystem.gd").new()
+	test_cultivation = load("res://scripts/core/realm/CultivationSystem.gd").new()
 	test_cultivation.set_player(test_player)
 	add_child(test_cultivation)
 	

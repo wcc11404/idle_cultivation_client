@@ -164,8 +164,8 @@ func _handle_breakthrough_failure(result: Dictionary):
 			var material_info = materials[material_id]
 			if not material_info.get("enough", true):
 				var material_name = item_data.get_item_name(material_id) if item_data else material_id
-				var current = material_info.get("current", 0)
-				var required = material_info.get("required", 0)
+				var current = int(material_info.get("current", 0))
+				var required = int(material_info.get("required", 0))
 				log_message.emit("突破失败：" + material_name + "不足 (" + str(current) + "/" + str(required) + ")")
 				break
 	else:
@@ -179,7 +179,7 @@ func _build_breakthrough_message(stone_cost: int, energy_cost: int, materials: D
 	
 	for material_id in materials.keys():
 		var material_info = materials[material_id]
-		var required_count = material_info.get("required", 0)
+		var required_count = int(material_info.get("required", 0))
 		if required_count > 0:
 			var material_name = item_data.get_item_name(material_id) if item_data else material_id
 			msg += "、" + material_name + str(required_count)

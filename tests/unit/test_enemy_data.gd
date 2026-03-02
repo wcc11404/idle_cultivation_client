@@ -7,7 +7,7 @@ func _ready():
 	helper = load("res://tests/test_helper.gd").new()
 	add_child(helper)
 	
-	enemy_data = load("res://scripts/core/EnemyData.gd").new()
+	enemy_data = load("res://scripts/core/lianli/EnemyData.gd").new()
 	add_child(enemy_data)
 
 func run_tests():

@@ -1,0 +1,122 @@
+{
+	"normal_areas": {
+		"qi_refining_outer": {
+			"name": "炼气期外围森林",
+			"description": "最外围的森林，妖兽实力极弱，适合新手历练和长时间挂机",
+			"enemies": [
+				{
+					"template": "wolf",
+					"min_level": 2, "max_level": 4, "weight": 40,
+					"drops": {"spirit_stone": {"min": 1, "max": 1, "chance": 1.0}}
+				},
+				{
+					"template": "snake",
+					"min_level": 2, "max_level": 4, "weight": 30,
+					"drops": {"spirit_stone": {"min": 1, "max": 1, "chance": 1.0}}
+				},
+				{
+					"template": "boar",
+					"min_level": 2, "max_level": 4, "weight": 30,
+					"drops": {"spirit_stone": {"min": 1, "max": 2, "chance": 1.0}}
+				}
+			]
+		},
+		"qi_refining_inner": {
+			"name": "炼气期内围山谷",
+			"description": "妖兽实力适中，偶尔能遇到强大的狼王，是炼气期修士的主要历练场所",
+			"enemies": [
+				{
+					"template": "wolf",
+					"min_level": 4, "max_level": 8, "weight": 35,
+					"drops": {"spirit_stone": {"min": 1, "max": 2, "chance": 1.0}}
+				},
+				{
+					"template": "snake",
+					"min_level": 4, "max_level": 8, "weight": 25,
+					"drops": {"spirit_stone": {"min": 1, "max": 2, "chance": 1.0}}
+				},
+				{
+					"template": "boar",
+					"min_level": 4, "max_level": 8, "weight": 30,
+					"drops": {"spirit_stone": {"min": 1, "max": 3, "chance": 1.0}}
+				},
+				{
+					"template": "iron_back_wolf",
+					"min_level": 5, "max_level": 8, "weight": 10,
+					"drops": {
+						"spirit_stone": {"min": 3, "max": 5, "chance": 1.0},
+						"spell_basic_defense": {"min": 1, "max": 1, "chance": 0.3}
+					}
+				}
+			]
+		},
+		"foundation_outer": {
+			"name": "筑基期外围荒原",
+			"description": "荒原上栖息着筑基初期的妖兽，实力远超炼气期",
+			"enemies": [
+				{
+					"template": "wolf",
+					"min_level": 14, "max_level": 18, "weight": 40,
+					"drops": {"spirit_stone": {"min": 3, "max": 5, "chance": 1.0}}
+				},
+				{
+					"template": "snake",
+					"min_level": 14, "max_level": 18, "weight": 20,
+					"drops": {"spirit_stone": {"min": 3, "max": 5, "chance": 1.0}}
+				},
+				{
+					"template": "boar",
+					"min_level": 14, "max_level": 18, "weight": 40,
+					"drops": {"spirit_stone": {"min": 3, "max": 6, "chance": 1.0}}
+				}
+			]
+		},
+		"foundation_inner": {
+			"name": "筑基期内围沼泽",
+			"description": "沼泽深处的妖兽更加凶猛，偶尔能遇到狼王",
+			"enemies": [
+				{
+					"template": "wolf",
+					"min_level": 18, "max_level": 23, "weight": 35,
+					"drops": {"spirit_stone": {"min": 4, "max": 6, "chance": 1.0}}
+				},
+				{
+					"template": "snake",
+					"min_level": 18, "max_level": 23, "weight": 25,
+					"drops": {"spirit_stone": {"min": 4, "max": 6, "chance": 1.0}}
+				},
+				{
+					"template": "boar",
+					"min_level": 18, "max_level": 23, "weight": 30,
+					"drops": {"spirit_stone": {"min": 4, "max": 7, "chance": 1.0}}
+				},
+				{
+					"template": "iron_back_wolf",
+					"min_level": 18, "max_level": 20, "weight": 10,
+					"drops": {
+						"spirit_stone": {"min": 8, "max": 10, "chance": 1.0},
+						"spell_basic_health": {"min": 1, "max": 1, "chance": 0.2}
+					}
+				}
+			]
+		}
+	},
+	"special_areas": {
+		"foundation_herb_cave": {
+			"name": "破境草洞穴",
+			"description": "神秘的洞穴，由强大的看守者守护",
+			"is_single_boss": true,
+			"enemies": [
+				{
+					"template": "herb_guardian",
+					"min_level": 10, "max_level": 10, "weight": 100,
+					"drops": {}
+				}
+			],
+			"special_drops": {
+				"foundation_herb": 10,
+				"spirit_stone": 20
+			}
+		}
+	}
+}

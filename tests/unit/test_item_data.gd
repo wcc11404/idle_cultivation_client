@@ -11,7 +11,7 @@ func run_tests():
 	print("\n=== ItemData 单元测试 ===")
 	helper.reset_stats()
 	
-	test_item_data = load("res://scripts/core/ItemData.gd").new()
+	test_item_data = load("res://scripts/core/inventory/ItemData.gd").new()
 	add_child(test_item_data)
 	
 	test_module_loading()

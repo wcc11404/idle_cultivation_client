@@ -314,7 +314,7 @@ func _get_special_area_reward_text() -> String:
 	
 	var drops_text = []
 	for item_id in special_drops.keys():
-		var amount = special_drops[item_id]
+		var amount = int(special_drops[item_id])
 		if item_id == "spirit_stone":
 			drops_text.append(str(amount) + " 灵石")
 		else:
@@ -332,8 +332,8 @@ func _get_normal_area_reward_text() -> String:
 	var drops = lianli_system.get_current_enemy_drops()
 	if drops.has("spirit_stone"):
 		var stone_drop = drops["spirit_stone"]
-		var min_amount = stone_drop.get("min", 0)
-		var max_amount = stone_drop.get("max", 0)
+		var min_amount = int(stone_drop.get("min", 0))
+		var max_amount = int(stone_drop.get("max", 0))
 		return "掉落: " + str(min_amount) + "-" + str(max_amount) + " 灵石"
 	return ""
 
@@ -361,13 +361,13 @@ func _set_continuous_default():
 	if not lianli_system:
 		return
 	
-	var is_tower = lianli_system.is_in_endless_tower()
-	
 	if continuous_checkbox:
+		var is_tower = lianli_system.is_in_endless_tower()
 		if is_tower:
-			continuous_checkbox.button_pressed = false
+			continuous_checkbox.button_pressed = lianli_system.area_continuous_default.get("endless_tower", false)
 		else:
-			continuous_checkbox.button_pressed = true
+			var area_id = lianli_system.current_area_id
+			continuous_checkbox.button_pressed = lianli_system.area_continuous_default.get(area_id, true)
 		# 同步到LianliSystem
 		lianli_system.set_continuous_lianli(continuous_checkbox.button_pressed)
 
@@ -535,7 +535,7 @@ func on_lianli_reward(item_id: String, amount: int, source: String):
 # 等待中
 func on_lianli_waiting(time_remaining: float):
 	if lianli_status_label:
-		lianli_status_label.text = "等待下一场历练... (" + str(ceil(time_remaining)) + "秒)"
+		lianli_status_label.text = "等待下一场历练... (" + str(int(ceil(time_remaining))) + "秒)"
 		lianli_status_label.modulate = Color.GRAY
 	
 	lianli_waiting.emit(time_remaining)

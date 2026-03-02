@@ -15,7 +15,7 @@ func run_tests():
 	test_player = load("res://scripts/core/PlayerData.gd").new()
 	add_child(test_player)
 	
-	test_lianli = load("res://scripts/core/LianliSystem.gd").new()
+	test_lianli = load("res://scripts/core/lianli/LianliSystem.gd").new()
 	test_lianli.set_player(test_player)
 	add_child(test_lianli)
 	

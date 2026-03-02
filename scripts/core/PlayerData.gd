@@ -1,5 +1,7 @@
 class_name PlayerData extends Node
 
+const AttributeCalculator = preload("res://scripts/core/AttributeCalculator.gd")
+
 signal realm_breakthrough(new_realm: String, new_level: int)
 signal breakthrough_failed(message: String)
 
@@ -297,7 +299,7 @@ func attempt_breakthrough() -> Dictionary:
 	# 消耗突破材料
 	for material_id in materials.keys():
 		var material_info = materials[material_id]
-		var required_count = material_info.get("required", 0)
+		var required_count = int(material_info.get("required", 0))
 		if required_count > 0 and inv:
 			inv.remove_item(material_id, required_count)
 	

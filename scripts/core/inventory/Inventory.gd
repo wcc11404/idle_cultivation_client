@@ -51,7 +51,7 @@ func add_item(item_id: String, count: int = 1) -> bool:
 	if count <= 0:
 		return false
 
-	if not item_data.item_data.has(item_id):
+	if not item_data or not item_data.item_data.has(item_id):
 		return false
 
 	var max_stack = item_data.get_max_stack(item_id)
@@ -139,7 +139,6 @@ func get_item_list() -> Array:
 	return result
 
 func sort_by_id():
-	# 收集所有非空物品
 	var items = []
 	for i in range(capacity):
 		if not slots[i]["empty"]:
@@ -148,14 +147,11 @@ func sort_by_id():
 				"count": slots[i]["count"]
 			})
 	
-	# 按ID排序
 	items.sort_custom(func(a, b): return a["id"] < b["id"])
 	
-	# 清空所有格子
 	for i in range(capacity):
 		slots[i] = {"empty": true, "id": "", "count": 0}
 	
-	# 重新放入排序后的物品
 	var index = 0
 	for item in items:
 		if index < capacity:
@@ -175,7 +171,6 @@ func get_save_data() -> Dictionary:
 func apply_save_data(data: Dictionary):
 	if data.has("slots"):
 		slots = data["slots"]
-		# 确保slots数组有MAX_SIZE个元素
 		while slots.size() < MAX_SIZE:
 			slots.append({"empty": true, "id": "", "count": 0})
 	
@@ -183,12 +178,3 @@ func apply_save_data(data: Dictionary):
 		capacity = data["capacity"]
 	else:
 		capacity = DEFAULT_SIZE
-
-func use_starter_pack() -> bool:
-	var starter_pack_data = item_data.get_item_data("starter_pack")
-	var starter_items = starter_pack_data.get("content", {})
-	for item_id in starter_items.keys():
-		var count = starter_items[item_id]
-		if not add_item(item_id, count):
-			return false
-	return true

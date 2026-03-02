@@ -283,10 +283,10 @@ func update_inventory_ui():
 					count_label.text = ""
 			else:
 				var item_id = item.get("id", "")
-				var count = item.get("count", 0)
+				var count = int(item.get("count", 0))
 				var item_info = item_data.get_item_data(item_id) if item_data else {}
 				var item_name = item_info.get("name", "未知")
-				var quality = item_info.get("quality", 0)
+				var quality = int(item_info.get("quality", 0))
 				
 				if name_label:
 					name_label.text = item_name
@@ -319,7 +319,7 @@ func _show_item_detail(index: int):
 		return
 	
 	var item_id = item_list[index].get("id", "")
-	var count = item_list[index].get("count", 0)
+	var count = int(item_list[index].get("count", 0))
 	
 	if item_id.is_empty():
 		_clear_item_detail_panel()
@@ -453,7 +453,7 @@ func _on_use_button_pressed():
 	# 处理有效果的物品
 	if not effect.is_empty():
 		var effect_type = effect.get("type", "")
-		var effect_amount = effect.get("amount", 0)
+		var effect_amount = int(effect.get("amount", 0))
 		
 		match effect_type:
 			"add_spirit_energy_unlimited":
@@ -479,8 +479,8 @@ func _on_use_button_pressed():
 					return
 			"add_spirit_and_health":
 				if player:
-					var spirit_amount = effect.get("spirit_amount", 0)
-					var health_amount = effect.get("health_amount", 0)
+					var spirit_amount = int(effect.get("spirit_amount", 0))
+					var health_amount = int(effect.get("health_amount", 0))
 					var unlimited = effect.get("unlimited", false)
 					if unlimited:
 						player.add_spirit_energy_unlimited(spirit_amount)
@@ -578,7 +578,7 @@ func _on_use_button_pressed():
 						return
 		
 		for content_id in content.keys():
-			var content_count = content[content_id]
+			var content_count = int(content[content_id])
 			if inventory:
 				inventory.add_item(content_id, content_count)
 				# 物品添加的日志由 _on_item_added 处理

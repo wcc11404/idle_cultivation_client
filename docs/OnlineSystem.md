@@ -7,7 +7,7 @@
 ### 核心原则
 - **纯云端存档**：本地不存储任何游戏进度
 - **单设备登录**：同一时间只允许一个设备在线
-- **弱网友好**：断网可继续游戏，联网后自动同步
+- **弱网友好**：断网可继续非关键操作，关键操作需联网验证；定时保存连续失败3次自动登出
 - **简化设计**：不引入不必要的复杂度（无Redis、无实时对战）
 
 ### 项目结构
@@ -408,23 +408,169 @@ async function calculateOfflineReward(account_id) {
 
 ### 4.5 网络容错处理
 
-#### 弱网/断网情况
-- 游戏**继续运行**，不阻塞玩家操作
-- 保存请求失败时，记录日志，继续游戏
-- 下次保存时重试
+#### 设计原则
+- **关键操作**：同步验证，服务端确认后才执行
+- **定时保存**：静默重试，不阻塞用户
+- **用户体验**：快速响应时不弹窗，慢速时才提示
 
-#### 关键操作失败处理
+#### 关键操作处理流程
+
+```
+请求开始
+    │
+    ├─ 0.5秒内返回 ──→ 成功：执行操作 / 失败：提示原因（无弹窗）
+    │
+    └─ 0.5秒未返回 ──→ 显示弹窗"网络环境不佳，正在等待..."
+           │
+           ├─ 5秒内返回 ──→ 关闭弹窗，执行结果
+           │
+           └─ 5秒超时 ──→ 关闭弹窗，提示"操作失败，请检查网络"
+```
+
+#### NetworkManager 实现
+
 ```gdscript
-func on_use_item(item_id):
-    var result = await GameServerAPI.use_item(item_id)
+# NetworkManager.gd
+extends Node
+
+const QUICK_THRESHOLD = 0.5   # 0.5秒内不显示弹窗
+const REQUEST_TIMEOUT = 5.0   # 5秒超时
+
+var loading_popup: AcceptDialog = null
+var is_requesting: bool = false
+
+func execute_critical_operation(api_path: String, body: Dictionary, on_success: Callable) -> void:
+    if is_requesting:
+        show_toast("请等待当前操作完成")
+        return
+    
+    is_requesting = true
+    
+    var http = HTTPRequest.new()
+    http.timeout = REQUEST_TIMEOUT
+    add_child(http)
+    
+    var headers = ["Content-Type: application/json"]
+    if current_token:
+        headers.append("Authorization: Bearer " + current_token)
+    
+    http.request(API_BASE + api_path, headers, HTTPClient.METHOD_POST, JSON.stringify(body))
+    
+    # 0.5秒后检查是否需要显示弹窗
+    await get_tree().create_timer(QUICK_THRESHOLD).timeout
+    var still_waiting = is_requesting
+    
+    if still_waiting:
+        _show_loading_popup()
+    
+    var response = await http.request_completed
+    http.queue_free()
+    
+    _hide_loading_popup()
+    is_requesting = false
+    
+    var result = _parse_response(response)
     
     if result.success:
-        # 服务端已扣除道具，客户端同步状态
-        Inventory.remove_item(item_id)
+        on_success.call(result.data)
     else:
-        # 失败提示，道具未扣除
-        show_message("使用失败，请检查网络")
+        show_error(result.message)
+
+func _show_loading_popup():
+    if not loading_popup:
+        loading_popup = AcceptDialog.new()
+        loading_popup.dialog_text = "网络环境不佳，正在等待..."
+        loading_popup.get_ok_button().disabled = true
+        add_child(loading_popup)
+    loading_popup.popup_centered()
+
+func _hide_loading_popup():
+    if loading_popup and loading_popup.visible:
+        loading_popup.hide()
 ```
+
+#### 各系统调用示例
+
+```gdscript
+# RealmSystem.gd - 突破境界
+func request_breakthrough(player: Node, inventory: Node):
+    var body = {
+        "current_realm": player.realm,
+        "current_level": player.realm_level,
+        "spirit_energy": player.spirit_energy
+    }
+    
+    NetworkManager.execute_critical_operation(
+        "/realm/breakthrough",
+        body,
+        func(data): _apply_breakthrough(player, data)
+    )
+
+func _apply_breakthrough(player: Node, data: Dictionary):
+    player.realm = data.new_realm
+    player.realm_level = data.new_level
+    player.spirit_energy = data.remaining_spirit_energy
+    player.apply_realm_stats()
+    show_success("突破成功！")
+```
+
+```gdscript
+# Inventory.gd - 使用重要道具
+func use_important_item(item_id: String, count: int = 1):
+    var body = {
+        "item_id": item_id,
+        "count": count
+    }
+    
+    NetworkManager.execute_critical_operation(
+        "/inventory/use_item",
+        body,
+        func(data): _apply_item_use(item_id, count, data)
+    )
+
+func _apply_item_use(item_id: String, count: int, data: Dictionary):
+    _local_remove_item(item_id, count)
+    _apply_item_effect(item_id, data.effect)
+    show_success("使用成功")
+```
+
+#### 定时保存处理
+
+定时保存不需要严格验证，失败静默重试，但连续失败3次则自动登出：
+
+```gdscript
+# CloudSaveManager.gd
+const MAX_SAVE_FAILURES = 3
+
+var save_failure_count: int = 0
+var last_save_time: int = 0
+
+func auto_save():
+    var result = await NetworkManager.save_game(collect_game_data())
+    
+    if result.success:
+        last_save_time = Time.get_unix_time_from_system()
+        save_failure_count = 0  # 成功后重置计数
+    else:
+        save_failure_count += 1
+        push_warning("自动保存失败 (%d/%d)" % [save_failure_count, MAX_SAVE_FAILURES])
+        
+        if save_failure_count >= MAX_SAVE_FAILURES:
+            _force_logout()
+
+func _force_logout():
+    show_error("网络连接异常，请重新登录")
+    NetworkManager.clear_token()
+    get_tree().change_scene_to_file("res://scenes/login/Login.tscn")
+```
+
+#### 用户体验总结
+
+| 场景 | 表现 |
+|------|------|
+| 网络良好（<0.5秒） | 无弹窗，直接执行 |
+| 网络一般（0.5-5秒） | 显示弹窗，等待后执行 |
+| 网络差（>5秒） | 显示弹窗，超时后提示失败 |
 
 #### 被踢出处理
 ```gdscript
@@ -755,35 +901,63 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 本节详细说明各现有系统改造为弱联网架构的具体实现。
 
+### 系统概览
+
+| 系统 | 改造类型 | 关键操作 | 说明 |
+|------|----------|----------|------|
+| SaveManager | 完全重写 | - | 改为 CloudSaveManager |
+| AccountSystem | 完全重写 | 登录/注册 | 改为服务端JWT认证 |
+| PlayerData | 数据同步 | 突破境界 | 数据从服务端获取 |
+| Inventory | 部分改造 | 使用重要道具 | 普通道具本地操作 |
+| CultivationSystem | 数据同步 | - | 修炼状态本地计算 |
+| LianliSystem | 部分改造 | 战斗胜利 | 战斗过程本地执行 |
+| SpellSystem | 部分改造 | 升级/充能 | 装备/卸下本地操作 |
+| RealmSystem | 服务端验证 | 突破境界 | 权威验证 |
+| AlchemySystem | 服务端验证 | 学习丹方/炼丹 | 新增系统 |
+
+---
+
 ### 8.1 SaveManager → CloudSaveManager
 
 **改造要点**：完全重写，本地不存任何数据
 
+**现有代码结构**：
 ```gdscript
-# 原 SaveManager 核心逻辑
+# scripts/core/SaveManager.gd
 class_name SaveManager extends Node
 
+const SAVE_VERSION = "1.3"
 const USER_DATA_DIR = "res://user_data"
 
 func save_game() -> bool:
-    var save_data = collect_save_data()
+    var save_data = {
+        "player": player.get_save_data(),
+        "inventory": inventory.get_save_data(),
+        "spell_system": spell_system.get_save_data(),
+        "timestamp": Time.get_unix_time_from_system(),
+        "version": SAVE_VERSION
+    }
     var file = FileAccess.open(save_file_path, FileAccess.WRITE)
     file.store_string(JSON.stringify(save_data))
     return true
 
 func load_game() -> bool:
     var file = FileAccess.open(save_file_path, FileAccess.READ)
-    var json_string = file.get_as_text()
-    var save_data = JSON.parse_string(json_string)
+    var save_data = JSON.parse_string(file.get_as_text())
     apply_save_data(save_data)
     return true
 ```
 
+**改造后代码**：
 ```gdscript
-# 新 CloudSaveManager 核心逻辑
+# scripts/managers/CloudSaveManager.gd
 class_name CloudSaveManager extends Node
 
 const AUTO_SAVE_INTERVAL = 300  # 5分钟
+const MAX_SAVE_FAILURES = 3
+
+var save_failure_count: int = 0
+var last_save_time: int = 0
 
 func _ready():
     start_auto_save()
@@ -795,29 +969,47 @@ func start_auto_save():
 
 func save_game() -> bool:
     var data = collect_game_data()
-    var result = await GameServerAPI.save_game(data)
+    var result = await NetworkManager.save_game(data)
+    
     if result.success:
         last_save_time = Time.get_unix_time_from_system()
+        save_failure_count = 0
         return true
     else:
-        push_error("存档失败: " + result.error)
+        save_failure_count += 1
+        push_warning("自动保存失败 (%d/%d)" % [save_failure_count, MAX_SAVE_FAILURES])
+        
+        if save_failure_count >= MAX_SAVE_FAILURES:
+            _force_logout()
         return false
 
+func _force_logout():
+    show_error("网络连接异常，请重新登录")
+    NetworkManager.clear_token()
+    get_tree().change_scene_to_file("res://scenes/login/Login.tscn")
+
 func load_game() -> bool:
-    var result = await GameServerAPI.load_game()
+    var result = await NetworkManager.load_game()
     if result.success:
         apply_game_data(result.data)
         return true
     return false
 
 func collect_game_data() -> Dictionary:
+    var game_manager = get_node("/root/GameManager")
     return {
         "version": "1.0",
-        "player": PlayerData.get_save_data(),
-        "inventory": Inventory.get_save_data(),
-        "spell_system": SpellSystem.get_save_data(),
+        "player": game_manager.get_player().get_save_data(),
+        "inventory": game_manager.get_inventory().get_save_data(),
+        "spell_system": game_manager.get_spell_system().get_save_data(),
         "timestamp": Time.get_unix_time_from_system()
     }
+
+func apply_game_data(data: Dictionary):
+    var game_manager = get_node("/root/GameManager")
+    game_manager.get_player().apply_save_data(data.get("player", {}))
+    game_manager.get_inventory().apply_save_data(data.get("inventory", {}))
+    game_manager.get_spell_system().apply_save_data(data.get("spell_system", {}))
 ```
 
 ---
@@ -826,8 +1018,9 @@ func collect_game_data() -> Dictionary:
 
 **改造要点**：本地账号验证改为服务端JWT认证
 
+**现有代码结构**：
 ```gdscript
-# 原 AccountSystem 核心逻辑
+# scripts/core/AccountSystem.gd
 class_name AccountSystem extends Node
 
 const ACCOUNTS_FILE = "user://accounts.json"
@@ -838,137 +1031,175 @@ func login(username: String, password: String) -> bool:
         return false
     if accounts[username].password != password:
         return false
+    current_account = username
     return true
 ```
 
+**改造后代码**：
 ```gdscript
-# 新 AccountSystem 核心逻辑
+# scripts/core/AccountSystem.gd（改造版）
 class_name AccountSystem extends Node
 
 signal login_success(username: String, token: String)
 signal login_failed(reason: String)
 signal token_expired()
 
-const API_BASE_URL = "http://localhost:3000/api"
 const TOKEN_FILE = "user://auth_token.dat"
 
 var current_token: String = ""
 var current_account: Dictionary = {}
 
-func login(username: String, password: String) -> bool:
-    var http = HTTPRequest.new()
-    add_child(http)
+func login(username: String, password: String) -> void:
+    var body = {"username": username, "password": password}
     
-    var body = JSON.stringify({
-        "username": username,
-        "password": password
-    })
-    
-    var error = http.request(
-        API_BASE_URL + "/auth/login",
-        ["Content-Type: application/json"],
-        HTTPClient.METHOD_POST,
-        body
+    NetworkManager.execute_critical_operation(
+        "/auth/login",
+        body,
+        func(data): _on_login_success(username, data)
     )
-    
-    if error != OK:
-        login_failed.emit("网络错误")
-        return false
-    
-    var response = await http.request_completed
-    var result = parse_response(response)
-    
-    if result.success:
-        current_token = result.token
-        current_account = result.account_info
-        save_token(result.token)
-        login_success.emit(username, result.token)
-        return true
-    else:
-        login_failed.emit(result.message)
-        return false
 
-func verify_token() -> bool:
-    if current_token.is_empty():
-        return false
+func _on_login_success(username: String, data: Dictionary):
+    current_token = data.token
+    current_account = data.account_info
+    save_token(data.token)
+    login_success.emit(username, data.token)
+
+func register(username: String, password: String) -> void:
+    var body = {"username": username, "password": password}
     
-    var http = HTTPRequest.new()
-    add_child(http)
-    
-    var headers = ["Authorization: Bearer " + current_token]
-    var error = http.request(
-        API_BASE_URL + "/auth/verify",
-        headers,
-        HTTPClient.METHOD_GET
+    NetworkManager.execute_critical_operation(
+        "/auth/register",
+        body,
+        func(data): _on_register_success(username, data)
     )
-    
-    var response = await http.request_completed
-    var result = parse_response(response)
-    
-    if not result.success:
-        token_expired.emit()
-        return false
-    return true
+
+func logout():
+    current_token = ""
+    current_account = {}
+    clear_token()
+
+func save_token(token: String):
+    current_token = token
+    var file = FileAccess.open(TOKEN_FILE, FileAccess.WRITE)
+    file.store_string(token)
+
+func load_token() -> bool:
+    if FileAccess.file_exists(TOKEN_FILE):
+        var file = FileAccess.open(TOKEN_FILE, FileAccess.READ)
+        current_token = file.get_as_text()
+        return not current_token.is_empty()
+    return false
+
+func clear_token():
+    current_token = ""
+    if FileAccess.file_exists(TOKEN_FILE):
+        DirAccess.remove_absolute(TOKEN_FILE)
+
+func get_auth_headers() -> Array:
+    return ["Authorization: Bearer " + current_token]
 ```
 
 ---
 
 ### 8.3 PlayerData → 服务端数据加载
 
-**改造要点**：数据从服务端获取，关键操作需验证
+**改造要点**：数据从服务端获取，突破需服务端验证
 
+**现有代码结构**：
 ```gdscript
-# 改造后的 PlayerData 核心逻辑
+# scripts/core/PlayerData.gd
 class_name PlayerData extends Node
 
-signal realm_breakthrough_success(new_realm: String, new_level: int)
-signal realm_breakthrough_failed(reason: String)
-
-var server_authority_data: Dictionary = {}
-
-func apply_server_data(data: Dictionary):
-    """应用服务端下发的权威数据"""
-    server_authority_data = data.duplicate()
-    realm = data.get("realm", "炼气期")
-    realm_level = data.get("realm_level", 1)
-    health = data.get("health", 500.0)
-    spirit_energy = data.get("spirit_energy", 0.0)
-    apply_realm_stats()
+var realm: String = "炼气期"
+var realm_level: int = 1
+var health: float = 500.0
+var spirit_energy: float = 0.0
+var tower_highest_floor: int = 0
+var learned_recipes: Array = []
+var has_alchemy_furnace: bool = false
+var daily_dungeon_data: Dictionary = {}
 
 func attempt_breakthrough() -> Dictionary:
-    """突破境界，需服务端验证"""
-    var http = HTTPRequest.new()
-    add_child(http)
+    var result = can_breakthrough()
+    if not result.get("can", false):
+        breakthrough_failed.emit(result.get("reason", ""))
+        return result
+    # 消耗资源并突破...
     
+func get_save_data() -> Dictionary:
+    return {
+        "realm": realm,
+        "realm_level": realm_level,
+        "health": health,
+        "spirit_energy": spirit_energy,
+        "tower_highest_floor": tower_highest_floor,
+        "learned_recipes": learned_recipes,
+        "has_alchemy_furnace": has_alchemy_furnace,
+        "daily_dungeon_data": daily_dungeon_data.duplicate()
+    }
+```
+
+**改造后代码**：
+```gdscript
+# scripts/core/PlayerData.gd（改造版）
+class_name PlayerData extends Node
+
+signal breakthrough_verified(result: Dictionary)
+
+func attempt_breakthrough() -> void:
     var game_manager = get_node("/root/GameManager")
     var inventory = game_manager.get_inventory()
     
-    var body = JSON.stringify({
+    var body = {
         "current_realm": realm,
         "current_level": realm_level,
         "spirit_energy": spirit_energy,
-        "inventory": {
-            "spirit_stone": inventory.get_item_count("spirit_stone")
-        }
-    })
+        "inventory_items": _get_breakthrough_materials()
+    }
     
-    var error = http.request(
-        API_BASE_URL + "/player/breakthrough",
-        game_manager.get_account_system().get_auth_headers(),
-        HTTPClient.METHOD_POST,
-        body
+    NetworkManager.execute_critical_operation(
+        "/player/breakthrough",
+        body,
+        func(data): _apply_breakthrough(data)
     )
+
+func _get_breakthrough_materials() -> Dictionary:
+    var game_manager = get_node("/root/GameManager")
+    var inventory = game_manager.get_inventory()
+    var realm_system = game_manager.get_realm_system()
     
-    var response = await http.request_completed
-    var result = parse_response(response)
+    var is_realm_breakthrough = (realm_level >= realm_system.get_realm_info(realm).get("max_level", 0))
+    var required = realm_system.get_breakthrough_materials(realm, realm_level, is_realm_breakthrough)
     
-    if result.success:
-        apply_server_data(result.player_data)
-        realm_breakthrough_success.emit(realm, realm_level)
-    else:
-        realm_breakthrough_failed.emit(result.reason)
+    var items = {}
+    for material_id in required.keys():
+        items[material_id] = inventory.get_item_count(material_id)
+    return items
+
+func _apply_breakthrough(data: Dictionary):
+    realm = data.new_realm
+    realm_level = data.new_level
+    spirit_energy = data.remaining_spirit_energy
     
-    return result
+    # 扣除服务端已验证的材料
+    var game_manager = get_node("/root/GameManager")
+    var inventory = game_manager.get_inventory()
+    for material_id in data.materials_used.keys():
+        inventory.remove_item(material_id, data.materials_used[material_id])
+    
+    apply_realm_stats()
+    breakthrough_verified.emit(data)
+
+func apply_server_data(data: Dictionary):
+    realm = data.get("realm", "炼气期")
+    realm_level = data.get("realm_level", 1)
+    health = float(data.get("health", 500.0))
+    spirit_energy = float(data.get("spirit_energy", 0.0))
+    tower_highest_floor = data.get("tower_highest_floor", 0)
+    learned_recipes = data.get("learned_recipes", [])
+    has_alchemy_furnace = data.get("has_alchemy_furnace", false)
+    daily_dungeon_data = data.get("daily_dungeon_data", {}).duplicate()
+    apply_realm_stats()
 ```
 
 ---
@@ -977,214 +1208,155 @@ func attempt_breakthrough() -> Dictionary:
 
 **改造要点**：重要道具使用需服务端验证
 
+**现有代码结构**：
 ```gdscript
-# 改造后的 Inventory 核心逻辑
+# scripts/core/Inventory.gd
 class_name Inventory extends Node
 
-signal item_operation_failed(operation: String, reason: String)
+var slots: Array = []
+var capacity: int = 50
 
-var pending_operations: Array = []
+func add_item(item_id: String, count: int = 1) -> bool:
+    # 本地添加物品...
 
-func remove_item(item_id: String, count: int = 1, reason: String = "consume") -> bool:
-    # 检查是否是重要道具
-    if is_important_item(item_id):
-        return await remove_item_with_verification(item_id, count, reason)
-    
-    # 普通道具本地移除
-    var success = _local_remove_item(item_id, count)
-    if success:
-        pending_operations.append({
-            "type": "remove",
-            "item_id": item_id,
-            "count": count,
-            "reason": reason,
-            "timestamp": Time.get_unix_time_from_system()
-        })
-    return success
+func remove_item(item_id: String, count: int = 1) -> bool:
+    # 本地移除物品...
 
-func remove_item_with_verification(item_id: String, count: int, reason: String) -> bool:
-    var http = HTTPRequest.new()
-    add_child(http)
-    
-    var game_manager = get_node("/root/GameManager")
-    
-    var body = JSON.stringify({
+func get_save_data() -> Dictionary:
+    return {"slots": slots, "capacity": capacity}
+```
+
+**改造后代码**：
+```gdscript
+# scripts/core/Inventory.gd（改造版）
+class_name Inventory extends Node
+
+const IMPORTANT_ITEMS = ["foundation_pill", "golden_core_pill", "starter_pack", "recipe_scroll"]
+
+func use_important_item(item_id: String, count: int = 1) -> void:
+    var body = {
         "item_id": item_id,
         "count": count,
-        "reason": reason,
         "current_inventory": get_save_data()
-    })
+    }
     
-    var error = http.request(
-        API_BASE_URL + "/inventory/consume",
-        game_manager.get_account_system().get_auth_headers(),
-        HTTPClient.METHOD_POST,
-        body
+    NetworkManager.execute_critical_operation(
+        "/inventory/use_item",
+        body,
+        func(data): _apply_item_use(item_id, count, data)
     )
+
+func _apply_item_use(item_id: String, count: int, data: Dictionary):
+    # 服务端已验证，执行本地操作
+    remove_item(item_id, count)
     
-    var response = await http.request_completed
-    var result = parse_response(response)
+    # 应用道具效果
+    match item_id:
+        "starter_pack":
+            _apply_starter_pack(data.contents)
+        "foundation_pill", "golden_core_pill":
+            # 丹药效果已在服务端计算
+            pass
     
-    if result.success:
-        apply_server_inventory(result.inventory_data)
-        return true
-    else:
-        item_operation_failed.emit("remove", result.message)
-        return false
+    item_used.emit(item_id, count)
+
+func add_item(item_id: String, count: int = 1) -> bool:
+    # 普通添加物品，本地操作
+    # ...原有逻辑...
+
+func remove_item(item_id: String, count: int = 1) -> bool:
+    # 普通移除物品，本地操作
+    # ...原有逻辑...
 ```
 
 ---
 
 ### 8.5 CultivationSystem → 修炼数据同步
 
-**改造要点**：修炼状态定期同步，离线收益服务端计算
+**改造要点**：修炼状态本地计算，定时保存时同步
 
+**现有代码结构**：
 ```gdscript
-# 改造后的 CultivationSystem 核心逻辑
+# scripts/core/CultivationSystem.gd
 class_name CultivationSystem extends Node
 
-signal cultivation_synced(server_spirit: float)
-
-const SYNC_INTERVAL = 10.0
-var server_spirit_energy: float = 0.0
-
-func _ready():
-    var timer = Timer.new()
-    timer.wait_time = SYNC_INTERVAL
-    timer.timeout.connect(sync_cultivation_to_server)
-    add_child(timer)
+var is_cultivating: bool = false
+var cultivation_timer: float = 0.0
+var cultivation_interval: float = 1.0
 
 func do_cultivate():
-    if not is_cultivating or not player:
-        return
-    
-    cultivation_timer += get_process_delta_time()
-    
-    if cultivation_timer >= cultivation_interval:
-        cultivation_timer = 0.0
-        
-        # 本地计算（乐观更新）
-        var spirit_gain = calculate_spirit_gain()
-        player.add_spirit_energy(spirit_gain)
-        cultivation_progress.emit(player.spirit_energy, player.get_final_max_spirit_energy())
-
-func sync_cultivation_to_server():
-    if not is_cultivating:
-        return
-    
-    var http = HTTPRequest.new()
-    add_child(http)
-    
-    var game_manager = get_node("/root/GameManager")
-    
-    var body = JSON.stringify({
-        "current_spirit": player.spirit_energy,
-        "realm": player.realm,
-        "timestamp": Time.get_unix_time_from_system()
-    })
-    
-    var error = http.request(
-        API_BASE_URL + "/cultivation/sync",
-        game_manager.get_account_system().get_auth_headers(),
-        HTTPClient.METHOD_POST,
-        body
-    )
-    
-    var response = await http.request_completed
-    var result = parse_response(response)
-    
-    if result.success:
-        server_spirit_energy = result.server_spirit
-        cultivation_synced.emit(server_spirit_energy)
+    # 计算灵气增长
+    player.add_spirit_energy(spirit_gain)
+    cultivation_progress.emit(player.spirit_energy, player.get_final_max_spirit_energy())
 ```
+
+**改造说明**：
+- 修炼过程完全本地计算，无需服务端实时验证
+- 灵气数据在定时保存时同步到服务端
+- 离线收益由服务端在登录时计算
+
+**无需修改代码**，修炼系统保持现有逻辑。
 
 ---
 
 ### 8.6 LianliSystem → 战斗结果上报
 
-**改造要点**：战斗结果上报服务端验证
+**改造要点**：战斗过程本地执行，战斗胜利需服务端验证掉落
 
+**现有代码结构**：
 ```gdscript
-# 改造后的 LianliSystem 核心逻辑
+# scripts/core/LianliSystem.gd
 class_name LianliSystem extends Node
 
-signal battle_result_verified(victory: bool, server_loot: Array)
+var is_in_battle: bool = false
+var current_enemy: Dictionary = {}
 
-var battle_log: Array = []
-var current_battle_id: String = ""
+func _handle_battle_victory():
+    # 计算掉落
+    var loot = []
+    for item_id in drops_config.keys():
+        if randf() <= chance:
+            loot.append({"item_id": item_id, "amount": amount})
+            lianli_reward.emit(item_id, amount, "lianli")
+```
 
-func start_battle(enemy_data: Dictionary) -> bool:
-    # 向服务端申请战斗会话
-    var session = await request_battle_session(enemy_data)
-    if not session.success:
-        return false
-    
-    current_battle_id = session.battle_id
-    battle_log.clear()
-    # ... 原有战斗初始化逻辑
-
-func request_battle_session(enemy_data: Dictionary) -> Dictionary:
-    var http = HTTPRequest.new()
-    add_child(http)
-    
-    var game_manager = get_node("/root/GameManager")
-    
-    var body = JSON.stringify({
-        "area_id": current_area_id,
-        "enemy_template": enemy_data.get("template_id", ""),
-        "enemy_level": enemy_data.get("level", 1),
-        "player_realm": player.realm
-    })
-    
-    var error = http.request(
-        API_BASE_URL + "/battle/start",
-        game_manager.get_account_system().get_auth_headers(),
-        HTTPClient.METHOD_POST,
-        body
-    )
-    
-    var response = await http.request_completed
-    return parse_response(response)
+**改造后代码**：
+```gdscript
+# scripts/core/LianliSystem.gd（改造版）
+class_name LianliSystem extends Node
 
 func _handle_battle_victory():
     is_in_battle = false
+    _restore_health_after_combat()
     
-    var battle_duration = Time.get_unix_time_from_system() - battle_start_time
+    var body = {
+        "area_id": current_area_id,
+        "enemy_id": current_enemy.get("id", ""),
+        "enemy_level": current_enemy.get("level", 1),
+        "is_tower": is_in_tower,
+        "tower_floor": current_tower_floor if is_in_tower else 0
+    }
     
-    # 上报战斗结果
-    var result = await report_battle_result(true, battle_duration)
-    
-    if result.success:
-        var server_loot = result.loot
-        for item in server_loot:
-            lianli_reward.emit(item.item_id, item.amount, "lianli")
-        battle_result_verified.emit(true, server_loot)
-    else:
-        log_message.emit("战斗验证失败：" + result.reason)
-
-func report_battle_result(victory: bool, duration: int) -> Dictionary:
-    var http = HTTPRequest.new()
-    add_child(http)
-    
-    var game_manager = get_node("/root/GameManager")
-    
-    var body = JSON.stringify({
-        "battle_id": current_battle_id,
-        "victory": victory,
-        "duration": duration,
-        "battle_log": battle_log,
-        "final_player_health": player.health
-    })
-    
-    var error = http.request(
-        API_BASE_URL + "/battle/end",
-        game_manager.get_account_system().get_auth_headers(),
-        HTTPClient.METHOD_POST,
-        body
+    NetworkManager.execute_critical_operation(
+        "/battle/victory",
+        body,
+        func(data): _apply_battle_loot(data)
     )
+
+func _apply_battle_loot(data: Dictionary):
+    var loot = data.loot
+    var game_manager = get_node("/root/GameManager")
+    var inventory = game_manager.get_inventory()
     
-    var response = await http.request_completed
-    return parse_response(response)
+    for item in loot:
+        inventory.add_item(item.item_id, item.amount)
+        lianli_reward.emit(item.item_id, item.amount, "lianli")
+    
+    # 更新无尽塔最高层数
+    if is_in_tower and data.has("new_highest_floor"):
+        game_manager.get_player().tower_highest_floor = data.new_highest_floor
+    
+    battle_ended.emit(true, loot, current_enemy.get("name", ""))
 ```
 
 ---
@@ -1193,68 +1365,76 @@ func report_battle_result(victory: bool, duration: int) -> Dictionary:
 
 **改造要点**：术法升级、充能需服务端确认
 
+**现有代码结构**：
 ```gdscript
-# 改造后的 SpellSystem 核心逻辑
+# scripts/core/SpellSystem.gd
 class_name SpellSystem extends Node
 
-signal spell_synced(spell_id: String, server_data: Dictionary)
+var player_spells: Dictionary = {}
+var equipped_spells: Dictionary = {}
 
 func upgrade_spell(spell_id: String) -> Dictionary:
-    var spell_info = player_spells[spell_id]
-    
-    # 向服务端请求升级
-    var server_result = await request_upgrade_spell(spell_id)
-    
-    if server_result.success:
-        player_spells[spell_id].level = server_result.new_level
-        player_spells[spell_id].charged_spirit = server_result.remaining_spirit
-        spell_upgraded.emit(spell_id, server_result.new_level)
-        return {"success": true, "new_level": server_result.new_level}
-    else:
-        return {"success": false, "reason": server_result.reason}
+    # 检查条件并升级
+    spell_info.level = next_level
+    spell_info.charged_spirit -= spirit_cost
+    spell_upgraded.emit(spell_id, next_level)
 
-func request_upgrade_spell(spell_id: String) -> Dictionary:
-    var http = HTTPRequest.new()
-    add_child(http)
-    
-    var game_manager = get_node("/root/GameManager")
+func charge_spell_spirit(spell_id: String, amount: int) -> Dictionary:
+    # 扣除灵气并充能
+    player.spirit_energy -= available
+    spell_info.charged_spirit += available
+```
+
+**改造后代码**：
+```gdscript
+# scripts/core/SpellSystem.gd（改造版）
+class_name SpellSystem extends Node
+
+func upgrade_spell(spell_id: String) -> void:
     var spell_info = player_spells[spell_id]
     
-    var body = JSON.stringify({
+    var body = {
         "spell_id": spell_id,
         "current_level": spell_info.level,
         "use_count": spell_info.use_count,
         "charged_spirit": spell_info.charged_spirit
-    })
+    }
     
-    var error = http.request(
-        API_BASE_URL + "/spell/upgrade",
-        game_manager.get_account_system().get_auth_headers(),
-        HTTPClient.METHOD_POST,
-        body
+    NetworkManager.execute_critical_operation(
+        "/spell/upgrade",
+        body,
+        func(data): _apply_spell_upgrade(spell_id, data)
     )
-    
-    var response = await http.request_completed
-    return parse_response(response)
 
-func charge_spell_spirit(spell_id: String, amount: int) -> Dictionary:
-    # 先扣除本地灵气
-    var player = get_node("/root/GameManager").get_player()
-    if player.spirit_energy < amount:
-        return {"success": false, "reason": "灵气不足"}
+func _apply_spell_upgrade(spell_id: String, data: Dictionary):
+    player_spells[spell_id].level = data.new_level
+    player_spells[spell_id].charged_spirit = data.remaining_charged_spirit
+    player_spells[spell_id].use_count = 0
+    spell_upgraded.emit(spell_id, data.new_level)
+
+func charge_spell_spirit(spell_id: String, amount: int) -> void:
+    var body = {
+        "spell_id": spell_id,
+        "amount": amount,
+        "player_spirit": player.spirit_energy
+    }
     
+    NetworkManager.execute_critical_operation(
+        "/spell/charge",
+        body,
+        func(data): _apply_spell_charge(spell_id, amount, data)
+    )
+
+func _apply_spell_charge(spell_id: String, amount: int, data: Dictionary):
     player.spirit_energy -= amount
-    
-    # 向服务端确认充能
-    var result = await request_charge_spell(spell_id, amount)
-    
-    if result.success:
-        player_spells[spell_id].charged_spirit += amount
-        return {"success": true}
-    else:
-        # 回滚灵气
-        player.spirit_energy += amount
-        return {"success": false, "reason": result.reason}
+    player_spells[spell_id].charged_spirit += amount
+
+# 装备/卸下术法：本地操作，无需服务端验证
+func equip_spell(spell_id: String) -> Dictionary:
+    # ...原有逻辑，保持不变...
+
+func unequip_spell(spell_id: String) -> Dictionary:
+    # ...原有逻辑，保持不变...
 ```
 
 ---
@@ -1263,58 +1443,130 @@ func charge_spell_spirit(spell_id: String, amount: int) -> Dictionary:
 
 **改造要点**：突破境界需服务端权威验证
 
+**现有代码结构**：
 ```gdscript
-# 改造后的 RealmSystem 核心逻辑
+# scripts/core/RealmSystem.gd
 class_name RealmSystem extends Node
 
-signal breakthrough_verified(result: Dictionary)
+const BREAKTHROUGH_MATERIALS = {
+    "realm_breakthrough": {...},
+    "level_breakthrough": {...}
+}
 
-func request_breakthrough(player: Node, inventory: Node) -> Dictionary:
-    var http = HTTPRequest.new()
-    add_child(http)
+func can_breakthrough(realm_name: String, current_level: int, spirit_stone: int, spirit_energy: int, inventory_items: Dictionary) -> Dictionary:
+    # 检查资源是否足够
+    # 返回是否可以突破
+
+func get_breakthrough_materials(realm_name: String, current_level: int, is_realm_breakthrough: bool) -> Dictionary:
+    # 获取所需材料
+```
+
+**改造说明**：
+- RealmSystem 保持现有配置和查询逻辑
+- 实际突破操作由 PlayerData 调用 NetworkManager 执行
+- 服务端验证时会使用相同的配置进行校验
+
+**无需修改代码**，RealmSystem 作为配置查询工具使用。
+
+---
+
+### 8.9 AlchemySystem → 炼丹验证（新增）
+
+**改造要点**：学习丹方、炼丹需服务端验证
+
+**现有代码结构**：
+```gdscript
+# scripts/core/AlchemySystem.gd
+class_name AlchemySystem extends Node
+
+var is_crafting: bool = false
+var current_craft_recipe: String = ""
+var craft_success_count: int = 0
+var craft_fail_count: int = 0
+
+func learn_recipe(recipe_id: String) -> bool:
+    if recipe_id in player.learned_recipes:
+        return false
+    player.learned_recipes.append(recipe_id)
+    recipe_learned.emit(recipe_id)
+    return true
+
+func start_crafting_batch(recipe_id: String, count: int) -> Dictionary:
+    # 检查材料、灵气
+    # 开始炼制
+    is_crafting = true
+    # ...炼制逻辑...
+```
+
+**改造后代码**：
+```gdscript
+# scripts/core/AlchemySystem.gd（改造版）
+class_name AlchemySystem extends Node
+
+func learn_recipe(recipe_id: String) -> void:
+    var body = {
+        "recipe_id": recipe_id,
+        "current_recipes": player.learned_recipes
+    }
     
-    var game_manager = get_node("/root/GameManager")
-    
-    var body = JSON.stringify({
-        "current_realm": player.realm,
-        "current_level": player.realm_level,
-        "spirit_energy": player.spirit_energy,
-        "inventory": {
-            "spirit_stone": inventory.get_item_count("spirit_stone")
-        }
-    })
-    
-    var error = http.request(
-        API_BASE_URL + "/realm/breakthrough",
-        game_manager.get_account_system().get_auth_headers(),
-        HTTPClient.METHOD_POST,
-        body
+    NetworkManager.execute_critical_operation(
+        "/alchemy/learn_recipe",
+        body,
+        func(data): _apply_learn_recipe(recipe_id, data)
     )
+
+func _apply_learn_recipe(recipe_id: String, data: Dictionary):
+    player.learned_recipes.append(recipe_id)
+    recipe_learned.emit(recipe_id)
+
+func start_crafting_batch(recipe_id: String, count: int) -> void:
+    var body = {
+        "recipe_id": recipe_id,
+        "count": count,
+        "materials": _get_current_materials(recipe_id, count),
+        "spirit_energy": player.spirit_energy
+    }
     
-    var response = await http.request_completed
-    var server_result = parse_response(response)
+    NetworkManager.execute_critical_operation(
+        "/alchemy/start_craft",
+        body,
+        func(data): _start_crafting_with_result(recipe_id, count, data)
+    )
+
+func _start_crafting_with_result(recipe_id: String, count: int, data: Dictionary):
+    # 服务端已验证，开始本地炼制
+    is_crafting = true
+    current_craft_recipe = recipe_id
+    current_craft_count = count
+    craft_time_per_pill = calculate_craft_time(recipe_id)
     
-    if server_result.success:
-        # 应用服务端结果
-        if server_result.type == "realm":
-            player.realm = server_result.new_realm
-            player.realm_level = 1
-        else:
-            player.realm_level = server_result.new_level
-        
-        # 扣除资源
-        inventory.remove_item("spirit_stone", server_result.stone_cost)
-        player.spirit_energy -= server_result.energy_cost
-        player.apply_realm_stats()
-        
-        breakthrough_verified.emit(server_result)
+    # 预先消耗材料
+    _consume_materials_for_batch(recipe_id, count)
     
-    return server_result
+    crafting_started.emit(recipe_id, count)
+
+func _complete_single_pill():
+    # 炼制过程保持本地计算
+    # 成功/失败由本地随机决定
+    var success_rate = calculate_success_rate(current_craft_recipe)
+    var roll = randf() * 100.0
+    
+    if roll <= success_rate:
+        craft_success_count += 1
+        # 添加成品
+        var product = recipe_data.get_recipe_product(current_craft_recipe)
+        inventory.add_item(product, recipe_data.get_recipe_product_count(current_craft_recipe))
+    else:
+        craft_fail_count += 1
+        # 返还一半材料
+        _return_half_materials(1)
 ```
 
 ---
 
-### 8.9 GameUI/SettingsModule → 移除存档功能
+### 8.10 GameUI/SettingsModule → 移除存档功能
+
+**改造要点**：移除手动存档/读档按钮，添加登出流程
 
 **改造要点**：移除手动存档/读档按钮，添加登录流程
 
