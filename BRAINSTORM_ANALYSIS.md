@@ -9,7 +9,7 @@
 
 ### 1.2 项目初始化设置
 ```
-hello_world/
+idle_cultivation/
 ├── project.godot          # 项目配置文件
 ├── scenes/                # 场景文件
 │   ├── main/

@@ -81,5 +81,5 @@ func test_get_special_drops():
 	var drops = lianli_area_data.get_special_drops("foundation_herb_cave")
 	helper.assert_true(not drops.is_empty(), "LianliAreaData", "破境草洞穴有特殊掉落")
 	
-	var has_foundation_pill = drops.has("foundation_pill")
-	helper.assert_true(has_foundation_pill, "LianliAreaData", "包含筑基丹")
+	var has_foundation_herb = drops.has("foundation_herb")
+	helper.assert_true(has_foundation_herb, "LianliAreaData", "包含破境草")

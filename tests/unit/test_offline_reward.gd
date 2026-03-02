@@ -29,10 +29,9 @@ func test_initialization():
 	helper.assert_true(test_offline_reward != null, "OfflineReward", "模块初始化")
 
 func test_calculate_reward():
-	test_player.spirit_energy = 0
-	test_player.max_spirit_energy = 100
+	test_player.spirit_energy = 0.0
+	test_player.base_max_spirit = 100.0
 	
-	# 测试2小时离线
 	var last_save_time = Time.get_unix_time_from_system() - 7200
 	var rewards = test_offline_reward.calculate_offline_reward(test_player, last_save_time)
 	

@@ -25,7 +25,7 @@
 
 ### 2.1 文件结构
 ```
-/Users/hsams/Documents/trae_projects/hello_world/scripts/core/
+/Users/hsams/Documents/trae_projects/idle_cultivation/scripts/core/
 ├── CultivationSystem.gd    # 修炼系统核心逻辑
 ├── RealmSystem.gd          # 境界系统配置
 ├── OfflineReward.gd        # 离线收益计算

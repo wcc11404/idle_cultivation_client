@@ -38,7 +38,7 @@ func test_item_names():
 
 func test_max_stack():
 	var max_stack = test_item_data.get_max_stack("spirit_stone")
-	helper.assert_eq(max_stack, 9999999, "ItemData", "灵石最大堆叠")
+	helper.assert_eq(max_stack, 999999999, "ItemData", "灵石最大堆叠")
 	
 	max_stack = test_item_data.get_max_stack("mat_iron")
 	helper.assert_eq(max_stack, 99, "ItemData", "玄铁最大堆叠")
@@ -55,17 +55,17 @@ func test_can_stack():
 
 func test_quality_colors():
 	var color = test_item_data.get_item_quality_color(0)
-	helper.assert_true(color == Color.GRAY, "ItemData", "灰色品质颜色")
+	helper.assert_true(color == Color("#D3D3D3"), "ItemData", "灰色品质颜色")
 	
 	color = test_item_data.get_item_quality_color(2)
-	helper.assert_true(color == Color.DODGER_BLUE, "ItemData", "蓝色品质颜色")
+	helper.assert_true(color == Color("#00BFFF"), "ItemData", "蓝色品质颜色")
 
 func test_starter_pack():
 	var starter_pack_data = test_item_data.get_item_data("starter_pack")
 	helper.assert_true(!starter_pack_data.is_empty(), "ItemData", "新手礼包数据加载")
 	
 	var pack_name = test_item_data.get_item_name("starter_pack")
-	helper.assert_eq(pack_name, "新手礼包", "ItemData", "新手礼包名称")
+	helper.assert_eq(pack_name, "新手礼包Ⅰ", "ItemData", "新手礼包名称")
 	
 	var pack_type = starter_pack_data.get("type", -1)
 	helper.assert_eq(pack_type, 3, "ItemData", "新手礼包类型")

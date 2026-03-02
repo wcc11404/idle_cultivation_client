@@ -45,22 +45,22 @@ func test_player_data():
 
 	helper.assert_eq(player.realm, "炼气期", "集成测试", "初始境界")
 	helper.assert_eq(player.realm_level, 1, "集成测试", "初始境界等级")
-	helper.assert_eq(player.health, 50, "集成测试", "初始生命值")
-	helper.assert_eq(player.max_health, 50, "集成测试", "初始最大生命值")
-	helper.assert_eq(player.spirit_energy, 0, "集成测试", "初始灵气")
-	helper.assert_eq(player.max_spirit_energy, 5, "集成测试", "初始最大灵气")
+	helper.assert_eq(int(player.health), 50, "集成测试", "初始生命值")
+	helper.assert_eq(int(player.get_final_max_health()), 50, "集成测试", "初始最大生命值")
+	helper.assert_eq(int(player.spirit_energy), 0, "集成测试", "初始灵气")
+	helper.assert_eq(int(player.get_final_max_spirit_energy()), 5, "集成测试", "初始最大灵气")
 
 	var game_manager_inv = game_manager.get_inventory()
 	game_manager_inv.add_item("spirit_stone", 100)
 	helper.assert_true(game_manager_inv.get_item_count("spirit_stone") >= 100, "集成测试", "添加灵石")
 
-	player.max_spirit_energy = 100  # 设置测试用的灵气上限
+	player.base_max_spirit = 100.0
 	player.add_spirit_energy(50)
-	helper.assert_eq(player.spirit_energy, 50, "集成测试", "添加灵气")
+	helper.assert_eq(int(player.spirit_energy), 50, "集成测试", "添加灵气")
 
-	player.health = 30
-	player.health = min(player.health + 10, player.max_health)
-	helper.assert_eq(player.health, 40, "集成测试", "恢复生命值")
+	player.health = 30.0
+	player.health = min(player.health + 10, player.get_final_max_health())
+	helper.assert_eq(int(player.health), 40, "集成测试", "恢复生命值")
 
 func test_cultivation_system():
 	print("\n=== CultivationSystem 测试 (集成环境) ===")
@@ -77,7 +77,7 @@ func test_cultivation_system():
 		helper.assert_true(false, "集成测试", "CultivationSystem存在")
 		return
 
-	player.spirit_energy = 0
+	player.spirit_energy = 0.0
 
 	cult_system.start_cultivation()
 	helper.assert_true(cult_system.is_cultivating, "集成测试", "开始修炼状态")
@@ -87,13 +87,13 @@ func test_cultivation_system():
 	helper.assert_true(not cult_system.is_cultivating, "集成测试", "停止修炼状态")
 	helper.assert_true(not player.get_is_cultivating(), "集成测试", "玩家修炼状态已关闭")
 
-	player.spirit_energy = 0
+	player.spirit_energy = 0.0
 	cult_system.start_cultivation()
 	cult_system._process(1.5)
-	helper.assert_eq(player.spirit_energy, 1, "集成测试", "修炼1次增加1灵气")
+	helper.assert_eq(int(player.spirit_energy), 1, "集成测试", "修炼1次增加1灵气")
 
-	player.spirit_energy = 0
-	player.max_spirit_energy = 100  # 设置测试用的灵气上限
+	player.spirit_energy = 0.0
+	player.base_max_spirit = 100.0
 	cult_system.start_cultivation()
 	for i in range(100):
 		cult_system._process(1.0)
@@ -115,11 +115,11 @@ func test_lianli_system():
 		helper.assert_true(false, "集成测试", "LianliSystem存在")
 		return
 
-	player.health = 500
-	player.max_health = 500
-	player.attack = 100
-	player.defense = 50
-	player.speed = 10
+	player.health = 500.0
+	player.base_max_health = 500.0
+	player.base_attack = 100.0
+	player.base_defense = 50.0
+	player.base_speed = 10.0
 
 	var enemy_data = {
 		"name": "筑基期妖兽",
@@ -133,10 +133,7 @@ func test_lianli_system():
 	lianli_system.start_battle(enemy_data)
 	helper.assert_true(lianli_system.is_in_battle, "集成测试", "战斗已开始")
 
-	# ATB系统：每0.1秒1个tick，需要调用_process来触发战斗
-	# 玩家速度10，敌人速度9，每tick增加，玩家先达到100
-	# 100/10 = 10 ticks，需要1秒（1x速度）
-	lianli_system._process(1.0)  # 触发玩家出手
+	lianli_system._process(1.0)
 	helper.assert_true(lianli_system.current_enemy.get("current_health", 0) < 1000, "集成测试", "敌人受到伤害")
 
 func test_level_up():
@@ -173,13 +170,13 @@ func test_realm_system():
 	player.realm_level = 1
 	player.apply_realm_stats()
 
-	helper.assert_eq(player.max_health, 50, "集成测试", "炼气期1段最大生命")
-	helper.assert_eq(player.attack, 5, "集成测试", "炼气期1段攻击力")
+	helper.assert_eq(int(player.get_final_max_health()), 50, "集成测试", "炼气期1段最大生命")
+	helper.assert_eq(int(player.get_final_attack()), 5, "集成测试", "炼气期1段攻击力")
 
 	player.realm_level = 5
 	player.apply_realm_stats()
-	helper.assert_eq(player.max_health, 76, "集成测试", "炼气期5段最大生命")
-	helper.assert_true(player.attack > 5, "集成测试", "炼气期5段攻击力增加")
+	helper.assert_eq(int(player.get_final_max_health()), 76, "集成测试", "炼气期5段最大生命")
+	helper.assert_true(player.get_final_attack() > 5, "集成测试", "炼气期5段攻击力增加")
 
 	var display_name = realm_system.get_realm_display_name("炼气期", 3)
 	helper.assert_eq(display_name, "炼气期 三层", "集成测试", "境界显示名称")

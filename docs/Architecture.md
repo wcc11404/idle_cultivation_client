@@ -15,7 +15,7 @@
 ## 1. 项目结构设计
 
 ```
-hello_world/
+idle_cultivation/
 ├── project.godot                    # Godot项目配置
 ├── scenes/                         # 场景文件
 │   └── tests/                      # 测试场景

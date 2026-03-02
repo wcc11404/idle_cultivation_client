@@ -15,7 +15,7 @@
 采用**前后端分离**的架构，客户端和服务端分为两个独立项目：
 
 ```
-hello_world/                    # 客户端（Godot）
+idle_cultivation/                    # 客户端（Godot）
 ├── project.godot
 ├── scripts/
 │   ├── network/               # 网络相关（新增）
@@ -24,7 +24,7 @@ hello_world/                    # 客户端（Godot）
 │   └── ...
 └── docs/OnlineSystem.md       # 本文件
 
-hello_world_server/             # 服务端（Python + FastAPI）
+idle_cultivation_server/             # 服务端（Python + FastAPI）
 ├── requirements.txt
 ├── main.py
 ├── app/
@@ -90,7 +90,7 @@ brew services start postgresql
 brew install python@3.11
 
 # 创建虚拟环境
-cd hello_world_server
+cd idle_cultivation_server
 python3.11 -m venv venv
 source venv/bin/activate
 
@@ -634,7 +634,7 @@ func on_auto_login():
 ### 7.1 项目结构
 
 ```
-hello_world_server/
+idle_cultivation_server/
 ├── requirements.txt            # Python依赖
 ├── main.py                     # 入口文件
 ├── app/

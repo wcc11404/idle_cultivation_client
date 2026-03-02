@@ -64,10 +64,10 @@ bash run_headless.sh
 测试脚本成功运行，输出显示：
 
 ```
-Setting HOME to: /Users/hsams/Documents/trae_projects/hello_world
+Setting HOME to: /Users/hsams/Documents/trae_projects/idle_cultivation
 Godot Engine v4.6.stable.official.89cea1439 - https://godotengine.org
 
-User data dir:/Users/hsams/Documents/trae_projects/hello_world/Library/Application Support/Godot/app_userdata/hello_world
+User data dir:/Users/hsams/Documents/trae_projects/idle_cultivation/Library/Application Support/Godot/app_userdata/idle_cultivation
 Executable path:/Applications/Godot.app/Contents/MacOS/Godot
 Test file created successfully
 Script finished
@@ -101,4 +101,4 @@ Script finished
 ## 注意事项
 - 此解决方案适用于 macOS 系统，其他系统可能需要适当调整
 - 运行脚本后，Godot 会在当前目录创建 `Library/Application Support/Godot/app_userdata/` 目录结构
-- 日志文件会保存在 `Library/Application Support/Godot/app_userdata/hello_world/logs/` 目录中
+- 日志文件会保存在 `Library/Application Support/Godot/app_userdata/idle_cultivation/logs/` 目录中

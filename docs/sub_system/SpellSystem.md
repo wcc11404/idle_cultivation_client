@@ -17,7 +17,7 @@
 
 ### 2.1 文件结构
 ```
-/Users/hsams/Documents/trae_projects/hello_world/scripts/core/
+/Users/hsams/Documents/trae_projects/idle_cultivation/scripts/core/
 ├── SpellSystem.gd    # 术法系统核心逻辑
 ├── SpellData.gd      # 术法数据配置
 └── ItemData.gd       # 物品数据（包含术法解锁道具）
