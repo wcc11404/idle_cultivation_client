@@ -1812,7 +1812,7 @@ mkdir idle_cultivation_server
 cd idle_cultivation_server
 
 # 2. 创建 Python 虚拟环境
-python3.11 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate  # Windows
 
