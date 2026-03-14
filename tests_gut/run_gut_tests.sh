@@ -8,7 +8,7 @@ echo "========================================"
 
 cd "$(dirname "$0")/.."
 
-godot --headless --script res://addons/gut/gut_cmdln.gd -gdir=res://tests/gut -ginclude_subdirs -gexit
+godot --headless --script res://addons/gut/gut_cmdln.gd -gdir=res://tests_gut -ginclude_subdirs -gexit
 
 echo ""
 echo "测试完成"

@@ -9,10 +9,10 @@ GUT (Godot Unit Test) 已安装到 `addons/gut` 目录。
 ### 方式1：命令行运行
 ```bash
 # 运行所有 GUT 测试
-godot --headless --script res://addons/gut/gut_cmdln.gd -gdir=res://tests/gut -ginclude_subdirs -gexit
+godot --headless --script res://addons/gut/gut_cmdln.gd -gdir=res://tests_gut -ginclude_subdirs -gexit
 
 # 或使用脚本
-./tests/gut/run_gut_tests.sh
+./tests_gut/run_gut_tests.sh
 ```
 
 ### 方式2：在 Godot 编辑器中运行
@@ -24,7 +24,7 @@ godot --headless --script res://addons/gut/gut_cmdln.gd -gdir=res://tests/gut -g
 ## 测试文件结构
 
 ```
-tests/gut/
+tests_gut/
 ├── gut_config.gd          # GUT 配置
 ├── GutTestRunner.tscn     # 测试运行场景
 ├── run_gut_tests.sh       # 命令行运行脚本
