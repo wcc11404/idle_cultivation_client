@@ -21,9 +21,24 @@ func set_player(player_node: Node):
 	player = player_node
 
 func start_cultivation():
+	_stop_other_systems()
+	
 	if player:
 		is_cultivating = true
 		player.cultivation_active = true
+
+func _stop_other_systems():
+	var game_manager = get_node_or_null("/root/GameManager")
+	if not game_manager:
+		return
+	
+	var lianli_system = game_manager.get_lianli_system()
+	if lianli_system and lianli_system.is_in_lianli:
+		lianli_system.end_lianli()
+	
+	var alchemy_system = game_manager.get_alchemy_system()
+	if alchemy_system and alchemy_system.is_crafting:
+		alchemy_system.stop_crafting()
 
 func stop_cultivation():
 	is_cultivating = false

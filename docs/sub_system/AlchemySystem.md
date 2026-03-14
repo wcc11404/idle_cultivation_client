@@ -644,9 +644,21 @@ var equipped_furnace_id: String = ""
 11. **停止返还**: 停止炼制时，如果当前正在炼制的丹药已消耗材料，则返还这一颗丹药的全部材料
 12. **UI刷新**: 每次进入炼丹房时，调用 `_update_craft_panel()` 刷新成功率、耗时等信息
 
+## 十、文件结构
+
+```
+scripts/core/alchemy/
+├── AlchemySystem.gd          # 炼丹系统核心逻辑
+├── AlchemyRecipeData.gd      # 丹方数据配置
+└── recipes.json             # 丹方配置文件
+
+scripts/ui/modules/
+└── AlchemyModule.gd        # 炼丹UI模块
+```
+
 ---
 
-**文档版本**: 2.2  
+**文档版本**: 2.3  
 **创建日期**: 2026-02-23  
-**最后更新**: 2026-03-03  
-**更新内容**: 更新材料消耗时机、停止返还逻辑、UI刷新逻辑等实现细节
+**最后更新**: 2026-03-14  
+**更新内容**: 更新文件路径和目录结构

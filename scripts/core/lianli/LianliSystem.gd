@@ -188,6 +188,8 @@ func start_lianli_in_area(area_id: String) -> bool:
 		log_message.emit("气血不足，无法进入" + area_name)
 		return false
 	
+	_stop_other_systems()
+	
 	current_area_id = area_id
 	is_in_lianli = true
 	continuous_lianli = lianli_area_data.get_default_continuous(area_id)
@@ -195,6 +197,19 @@ func start_lianli_in_area(area_id: String) -> bool:
 	lianli_started.emit(area_id)
 	
 	return start_next_battle()
+
+func _stop_other_systems():
+	var game_manager = get_node_or_null("/root/GameManager")
+	if not game_manager:
+		return
+	
+	var cultivation_system = game_manager.get_cultivation_system()
+	if cultivation_system and cultivation_system.is_cultivating:
+		cultivation_system.stop_cultivation()
+	
+	var alchemy_system = game_manager.get_alchemy_system()
+	if alchemy_system and alchemy_system.is_crafting:
+		alchemy_system.stop_crafting()
 
 ## 生成并开始下一场战斗
 ## 从当前区域配置中随机选择敌人模板和等级

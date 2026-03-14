@@ -460,4 +460,52 @@ func test_foundation_level1_vs_endless_tower():
 	var passed = assert_count_end - assert_count_start
 	gut.p("[场景④] 断言: " + str(passed) + "/" + str(assert_count_end - assert_count_start) + " 通过, 耗时: " + str(total_test_time) + "秒")
 
+#region 场景⑤: 历练与修炼系统互斥
+## 测试场景: 历练时尝试开始修炼
+## 测试目标: 验证历练和修炼不能同时进行
+## 预期结果: 开始修炼时，历练自动停止
+## 同时测试: 历练系统 + 修炼系统
+#endregion
+
+func test_lianli_cultivation_mutex():
+	if not _check_systems_available():
+		return
+	
+	var assert_count_start = gut.get_assert_count()
+	var test_start_time = Time.get_ticks_msec()
+	
+	# 设置玩家状态
+	player.realm = "筑基期"
+	player.realm_level = 3
+	player.apply_realm_stats()
+	player.health = player.get_final_max_health()
+	
+	# 开始历练
+	lianli_system.set_lianli_speed(10.0)
+	lianli_system.set_continuous_lianli(false)
+	var started = lianli_system.start_lianli_in_area("qi_refining_outer")
+	assert_true(started, "应成功进入历练区域")
+	assert_true(lianli_system.is_in_lianli, "应在历练中")
+	
+	# 尝试开始修炼
+	var cultivation_system = game_manager.get_cultivation_system()
+	if cultivation_system:
+		cultivation_system.start_cultivation()
+		
+		# 检查历练状态
+		assert_false(lianli_system.is_in_lianli, "历练应自动停止")
+		assert_true(cultivation_system.is_cultivating, "应开始修炼")
+		
+		# 停止修炼
+		cultivation_system.stop_cultivation()
+	
+	# 清理
+	lianli_system.set_lianli_speed(1.0)
+	
+	var total_test_time = (Time.get_ticks_msec() - test_start_time) / 1000.0
+	
+	var assert_count_end = gut.get_assert_count()
+	var passed = assert_count_end - assert_count_start
+	gut.p("[场景⑤] 断言: " + str(passed) + "/" + str(assert_count_end - assert_count_start) + " 通过, 耗时: " + str(total_test_time) + "秒")
+
 #endregion

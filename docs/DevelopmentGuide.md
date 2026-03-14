@@ -119,201 +119,109 @@ func get_system_name():
 
 ## 三、测试规范
 
-### 3.1 测试目录结构
+### 3.1 测试框架
+
+项目使用 **GUT (Godot Unit Testing)** 框架进行测试，这是Godot官方推荐的测试框架。
+
+### 3.2 测试目录结构
 ```
 tests/
-├── test_helper.gd              # 测试辅助基类（统一断言和结果统计）
-├── run_all_tests.gd            # 统一测试运行器（一键运行所有测试）
-├── TestRunner.tscn              # 测试运行场景
-├── README.md                    # 测试说明文档
+├── gut.config.json              # GUT配置文件
+├── test_helper.gd              # 测试辅助基类
 ├── unit/                        # 单元测试目录
 │   ├── test_item_data.gd       # ItemData 模块测试
 │   ├── test_inventory.gd       # Inventory 模块测试
 │   ├── test_player_data.gd     # PlayerData 模块测试
 │   ├── test_realm_system.gd    # RealmSystem 模块测试
 │   ├── test_cultivation_system.gd  # CultivationSystem 模块测试
-│   ├── test_battle_system.gd   # BattleSystem 模块测试
 │   ├── test_offline_reward.gd  # OfflineReward 模块测试
 │   └── test_save_manager.gd    # SaveManager 模块测试
 └── integration/                 # 集成测试目录
     └── test_all_systems.gd     # GameManager 集成环境下的全系统测试
 ```
 
-### 3.2 测试框架设计原则
+### 3.3 测试框架使用原则
 
 #### 原则1：按系统组织测试
 - 每个核心系统有独立的测试文件
 - 单元测试和集成测试明确分离
 - 避免重复测试用例
 
-#### 原则2：统一使用 test_helper.gd
-- 所有测试使用统一的断言方法
-- 统一的测试结果统计
-- 统一的输出格式
+#### 原则2：使用GUT框架
+- 所有测试继承自 `GutTest`
+- 使用GUT提供的断言方法
+- 遵循GUT的测试命名规范
 
 #### 原则3：测试方法命名规范
-- `test_xxx() - 测试函数
+- 测试函数以 `test_` 开头
+- 清晰描述测试场景
 - 避免与变量名冲突
 
-### 3.3 测试阶段要求
+### 3.4 测试阶段要求
 
 #### 新功能开发流程
 1. **功能实现**：完成新功能的代码编写
 2. **测试用例编写**：
    - 在 `tests/unit/` 下创建对应系统的测试文件
    - 如需要集成测试，在 `tests/integration/` 下添加
-3. **测试执行**：运行 `TestRunner.tscn` 验证功能正确性
+3. **测试执行**：使用GUT运行测试验证功能正确性
 4. **动静态检查**：执行静态检查和动态检查
 5. **测试完善**：修复测试中发现的问题，确保测试覆盖所有场景
 
-#### 必须同时执行静态检查和动态检查
-- **静态检查**：验证语法正确性
-- **动态检查**：验证运行时逻辑
-
-#### 执行检查时必须添加--quit-after 100参数
-- 防止程序无限运行
-- 确保测试自动化可终止
-
-### 3.4 代码交付前检查清单
-
-| 检查项 | 工具/方法 | 通过标准 |
-|--------|----------|--------|
-| 静态语法检查 | GetDiagnostics / Godot编辑器 | 无error |
-| Godot静态检查 | `bash run_test.sh` (Check-only模式) | 无错误输出 |
-| 全系统测试 | `bash run_test.sh` (运行所有测试) | 所有测试通过 |
-| 动态运行测试 | `bash run_test.sh` (Headless模式) | 无Parse Error |
-| GUI运行测试 | Godot编辑器F5运行 | 功能正常 |
-| 逻辑验证 | 手动运行测试 | 功能符合预期 |
-
 ### 3.5 测试执行流程
 
-#### 3.5.1 自动化测试流程
+#### 3.5.1 使用GUT运行测试
 
-使用项目根目录下的 `run_test.sh` 脚本可以一键执行所有测试，该脚本会自动按顺序运行以下测试模式：
+**通过Godot编辑器运行**：
+1. 安装GUT插件（通过AssetLib）
+2. 打开GUT面板（Project > Tools > GUT）
+3. 选择测试目录和配置
+4. 点击"Run Tests"按钮
 
-1. **Check-only 模式**：验证代码语法正确性
-2. **运行所有测试**：执行完整的单元测试和集成测试
-3. **Headless 模式**：验证游戏在无图形界面环境下的运行状态
-
-**使用方法**：
+**通过命令行运行**：
 ```bash
-# 在项目根目录执行
-bash run_test.sh
+# 运行所有测试
+../../Godot_v4.6-stable_linux.x86_64 --headless --path . --script addons/gut/gut_cmdln.gd -gdir=res://tests_gut -gexit
+
+# 运行特定目录的测试
+../../Godot_v4.6-stable_linux.x86_64 --headless --path . --script addons/gut/gut_cmdln.gd -gdir=res://tests_gut/integration -gexit
+
+# 运行单个测试文件
+../../Godot_v4.6-stable_linux.x86_64 --headless --path . --script addons/gut/gut_cmdln.gd -gtest=res://tests_gut/integration/test_cultivation_integration.gd -gexit
 ```
 
-**脚本特点**：
-- 自动设置 `HOME` 环境变量，解决日志文件权限问题
-- 有错误时提前退出，显示详细错误信息
-- 提供清晰的测试结果输出
-- 所有模式都添加了 `--quit-after 100` 参数，确保测试自动终止
-
-#### 3.5.2 手动测试流程
-
-**步骤1：单独运行单元测试**
-- 在Godot编辑器中打开 `tests/unit/` 下的任意测试文件
-- 按F5运行测试
-
-**步骤2：单独运行集成测试**
-- 在Godot编辑器中打开 `tests/integration/test_all_systems.gd`
-- 按F5运行测试
-
-**步骤3：运行完整测试套件**
-- 在Godot编辑器中打开 `tests/TestRunner.tscn`
-- 按F5运行测试
-
-**步骤4：GUI功能测试**
-- 在Godot编辑器中打开 `scenes/main/Main.tscn`
-- 按F5运行游戏
-- 手动测试各项功能
-
-#### 3.5.3 编写新测试用例
+#### 3.5.2 编写新测试用例
 
 **单元测试模板**（`tests/unit/test_yourmodule.gd`）：
 
 ```gdscript
 # 新系统测试文件示例
-extends Node
+extends GutTest
 
-var helper: Node = null
 var your_module: Node = null
 
-func _ready():
-	helper = load("res://tests/test_helper.gd").new()
-	add_child(helper)
+func before_all():
 	# 初始化测试对象
 	your_module = load("res://scripts/core/YourModule.gd").new()
 
-func run_tests():
-	print("\n=== YourModule 单元测试 ===")
-	helper.reset_stats()
-	
-	test_initialization()
-	test_functionality()
-	test_edge_cases()
-	test_error_handling()
-	
-	helper.print_test_summary()
-	return helper.failed_count == 0
-
 func test_initialization():
-	helper.assert_true(your_module != null, "YourModule", "模块初始化")
+	a.assert_not_null(your_module, "模块初始化")
 
 func test_functionality():
 	# 测试核心功能
 	var result = your_module.some_function()
-	helper.assert_eq(result, expected_value, "YourModule", "功能测试")
+	a.assert_eq(result, expected_value, "功能测试")
 
 func test_edge_cases():
 	# 测试边界情况
-	helper.assert_true(your_module.handle_edge_case() == expected_result, "YourModule", "边界情况测试")
+	a.assert_eq(your_module.handle_edge_case(), expected_result, "边界情况测试")
 
 func test_error_handling():
 	# 测试错误处理
-	helper.assert_true(your_module.handle_error() == expected_error_result, "YourModule", "错误处理测试")
+	a.assert_eq(your_module.handle_error(), expected_error_result, "错误处理测试")
 ```
 
-**集成测试添加**（`tests/integration/test_all_systems.gd`）：
-
-在 `run_tests()` 函数中添加新的测试函数调用：
-
-```gdscript
-func run_tests():
-	print("\n========================================")
-	print("修仙游戏核心系统集成测试")
-	print("========================================")
-	helper.reset_stats()
-	
-	await get_tree().create_timer(0.5).timeout
-	
-	test_player_data()
-	test_cultivation_system()
-	test_battle_system()
-	test_new_system()  # 添加新系统的集成测试
-	# 其他测试...
-	
-	print("\n========================================")
-	helper.print_test_summary()
-	
-	return helper.failed_count == 0
-
-func test_new_system():
-	print("\n=== NewSystem 测试 (集成环境) ===")
-	
-	var game_manager = get_node_or_null("/root/GameManager")
-	if not game_manager:
-		return
-	
-	var new_system = game_manager.get_new_system()
-	if not new_system:
-		print("✗ 无法获取NewSystem")
-		helper.assert_true(false, "集成测试", "NewSystem存在")
-		return
-	
-	# 测试新系统的集成功能
-	helper.assert_true(new_system.some_integration_function(), "集成测试", "新系统集成功能")
-```
-
-#### 3.5.4 测试覆盖率要求
+### 3.6 测试覆盖率要求
 
 **单元测试覆盖率**：
 - 核心功能：100%
@@ -324,7 +232,7 @@ func test_new_system():
 - 系统间交互：至少90%
 - 完整游戏流程：100%
 
-#### 3.5.5 测试结果分析
+### 3.7 测试结果分析
 
 **测试通过标准**：
 - 所有测试用例通过
@@ -339,7 +247,8 @@ func test_new_system():
 4. 记录修复过程
 
 **测试报告**：
-- 测试运行完成后，查看控制台输出的测试总结
+- GUT会自动生成测试报告
+- 查看控制台输出的测试结果
 - 确保所有测试通过
 - 检查测试覆盖率
 - 记录测试结果
@@ -436,20 +345,27 @@ open -a Godot --args --path "/Users/hsams/Documents/trae_projects/idle_cultivati
 
 ### 6.1 核心系统列表
 - **PlayerData**: 玩家数据管理
+- **AccountSystem**: 账号系统
 - **RealmSystem**: 境界系统
 - **CultivationSystem**: 修炼系统
-- **BattleSystem**: 战斗系统
-- **Inventory**: 背包系统
+- **LianliSystem**: 历练系统（包含战斗功能）
+- **Inventory**: 储纳系统
 - **ItemData**: 物品数据
+- **SpellSystem**: 术法系统
+- **SpellData**: 术法数据
+- **AlchemySystem**: 炼丹系统
+- **AlchemyRecipeData**: 丹方数据
+- **LianliAreaData**: 历练区域数据
+- **EnemyData**: 敌人数据
+- **EndlessTowerData**: 无尽塔数据
 - **OfflineReward**: 离线收益
 - **SaveManager**: 存档管理
-- **TaskSystem**: 任务系统
 - **GameManager**: 游戏管理器（autoload）
 - **LogManager**: 日志管理
 
 ---
 
-**文档版本**：2.3
+**文档版本**：3.0
 **创建日期**：2026-02-16
-**更新日期**：2026-02-17
+**更新日期**：2026-03-14
 **适用范围**：Godot 4.6 + GDScript开发

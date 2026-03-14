@@ -340,3 +340,48 @@ func test_continuous_crafting_batches():
 	var assert_count_end = gut.get_assert_count()
 	var passed = assert_count_end - assert_count_start
 	gut.p("[场景④] 断言: " + str(passed) + "/" + str(assert_count_end - assert_count_start) + " 通过, 耗时: " + str(total_test_time) + "秒")
+
+#region 场景⑤: 炼丹与修炼系统互斥
+## 测试场景: 炼丹时尝试开始修炼
+## 测试目标: 验证炼丹和修炼不能同时进行
+## 预期结果: 开始修炼时，炼丹自动停止
+## 同时测试: 炼丹系统 + 修炼系统
+#endregion
+
+func test_alchemy_cultivation_mutex():
+	if not _check_systems_available():
+		return
+	
+	var assert_count_start = gut.get_assert_count()
+	var test_start_time = Time.get_ticks_msec()
+	
+	# 准备炼丹材料
+	inventory.add_item("mat_herb", 50)
+	player.spirit_energy = 100
+	
+	# 学习丹方
+	alchemy_system.learn_recipe("health_pill")
+	
+	# 开始炼丹
+	alchemy_system.special_bonus_speed_rate = 5.0
+	var result = alchemy_system.start_crafting_batch("health_pill", 10)
+	assert_true(result.success, "应成功开始炼丹")
+	assert_true(alchemy_system.is_crafting, "应在炼丹中")
+	
+	# 尝试开始修炼
+	var cultivation_system = game_manager.get_cultivation_system()
+	if cultivation_system:
+		cultivation_system.start_cultivation()
+		
+		# 检查炼丹状态
+		assert_false(alchemy_system.is_crafting, "炼丹应自动停止")
+		assert_true(cultivation_system.is_cultivating, "应开始修炼")
+		
+		# 停止修炼
+		cultivation_system.stop_cultivation()
+	
+	var total_test_time = (Time.get_ticks_msec() - test_start_time) / 1000.0
+	
+	var assert_count_end = gut.get_assert_count()
+	var passed = assert_count_end - assert_count_start
+	gut.p("[场景⑤] 断言: " + str(passed) + "/" + str(assert_count_end - assert_count_start) + " 通过, 耗时: " + str(total_test_time) + "秒")

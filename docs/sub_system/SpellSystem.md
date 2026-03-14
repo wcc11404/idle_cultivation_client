@@ -17,7 +17,7 @@
 
 ### 2.1 文件结构
 ```
-/Users/hsams/Documents/trae_projects/idle_cultivation/scripts/core/spell/
+scripts/core/spell/
 ├── SpellSystem.gd    # 术法系统核心逻辑
 ├── SpellData.gd      # 术法数据管理（从JSON加载）
 └── spells.json       # 术法配置数据
@@ -428,3 +428,4 @@ func get_equipped_breathing_heal_effect() -> Dictionary:
 | 1.2 | 2026-02-24 | 更新术法数值（基础气血、基础步法数值调整）|
 | 2.0 | 2026-03-03 | 重构：数据移至JSON配置、更新文件结构、明确升级条件查询规则 |
 | 2.1 | 2026-03-03 | 新增吐纳心法装备上限配置（MAX_BREATHING_SPELLS），支持多吐纳术法效果叠加 |
+| 2.2 | 2026-03-14 | 更新文件路径和目录结构 |

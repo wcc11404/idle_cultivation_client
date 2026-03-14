@@ -44,11 +44,13 @@ enum ItemType {
 
 ### 2.1 文件结构
 ```
-/Users/hsams/Documents/trae_projects/idle_cultivation/scripts/core/
+scripts/core/inventory/
 ├── Inventory.gd          # 储纳系统核心逻辑
 ├── ItemData.gd           # 物品数据配置
-└── /scripts/ui/modules/
-    └── ChunaModule.gd    # 储纳UI模块
+└── items.json           # 物品配置数据
+
+scripts/ui/modules/
+└── ChunaModule.gd    # 储纳UI模块
 ```
 
 ### 2.2 核心常量定义
@@ -655,3 +657,4 @@ const EXPAND_STEP = 10      # 修改每次扩展数量
 | 1.0 | 2026-02-24 | 初始文档 |
 | 2.0 | 2026-02-25 | 重构物品类型系统，新增功能解锁类，优化品质颜色，添加重要物品保护机制 |
 | 2.1 | 2026-03-04 | 存档格式改为稀疏存储，兼容旧版本格式 |
+| 2.2 | 2026-03-14 | 更新文件路径和目录结构 |

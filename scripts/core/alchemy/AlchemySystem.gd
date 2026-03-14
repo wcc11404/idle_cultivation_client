@@ -269,6 +269,19 @@ func _consume_single_craft_materials():
 		player.consume_spirit(spirit_required)
 
 # 开始批量炼制
+func _stop_other_systems():
+	var game_manager = get_node_or_null("/root/GameManager")
+	if not game_manager:
+		return
+	
+	var cultivation_system = game_manager.get_cultivation_system()
+	if cultivation_system and cultivation_system.is_cultivating:
+		cultivation_system.stop_cultivation()
+	
+	var lianli_system = game_manager.get_lianli_system()
+	if lianli_system and lianli_system.is_in_lianli:
+		lianli_system.end_lianli()
+
 func start_crafting_batch(recipe_id: String, count: int) -> Dictionary:
 	var result = {
 		"success": false,
@@ -294,6 +307,8 @@ func start_crafting_batch(recipe_id: String, count: int) -> Dictionary:
 	if not spirit_check.enough:
 		result.reason = "灵气不足"
 		return result
+	
+	_stop_other_systems()
 	
 	is_crafting = true
 	current_craft_recipe = recipe_id
