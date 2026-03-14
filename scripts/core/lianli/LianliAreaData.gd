@@ -14,6 +14,35 @@ func _load_config():
 		if data:
 			NORMAL_AREAS = data.get("normal_areas", {})
 			SPECIAL_AREAS = data.get("special_areas", {})
+			
+			_convert_area_data_types(NORMAL_AREAS)
+			_convert_area_data_types(SPECIAL_AREAS)
+			
+			for area_id in SPECIAL_AREAS.keys():
+				var special_drops = SPECIAL_AREAS[area_id].get("special_drops", {})
+				for item_id in special_drops.keys():
+					special_drops[item_id] = int(special_drops[item_id])
+
+func _convert_area_data_types(areas: Dictionary):
+	for area_id in areas.keys():
+		var enemies = areas[area_id].get("enemies", [])
+		for enemy_config in enemies:
+			if enemy_config.is_empty():
+				continue
+			
+			enemy_config["min_level"] = int(enemy_config.get("min_level", 1))
+			enemy_config["max_level"] = int(enemy_config.get("max_level", 1))
+			enemy_config["weight"] = int(enemy_config.get("weight", 1))
+			
+			if enemy_config.has("drops"):
+				for item_id in enemy_config["drops"].keys():
+					var drop_info = enemy_config["drops"][item_id]
+					drop_info["min"] = int(drop_info.get("min", 0))
+					drop_info["max"] = int(drop_info.get("max", 0))
+					if drop_info.has("chance"):
+						drop_info["chance"] = float(drop_info["chance"])
+					else:
+						drop_info["chance"] = 1.0
 
 func get_normal_areas() -> Dictionary:
 	return NORMAL_AREAS.duplicate()

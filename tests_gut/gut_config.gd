@@ -3,7 +3,7 @@ extends Resource
 ## GUT 配置文件
 
 # 测试目录
-var directories = ["res://tests/gut"]
+var directories = ["res://tests_gut"]
 var include_subdirectories = true
 
 # 测试文件后缀

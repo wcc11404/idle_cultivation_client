@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://gut_test_runner"]
 
-[ext_resource type="Script" path="res://addons/gut/gut_cmdln.gd" id="1"]
+[ext_resource type="Script" path="res://addons/gut/GutScene.gd" id="1"]
 
 [node name="GutTestRunner" type="Node2D"]
 script = ExtResource("1")

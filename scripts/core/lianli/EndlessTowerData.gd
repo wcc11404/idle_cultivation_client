@@ -13,9 +13,15 @@ func _load_config():
 		var json_text = file.get_as_text()
 		var data = JSON.parse_string(json_text)
 		if data:
-			MAX_FLOOR = data.get("max_floor", 51)
+			MAX_FLOOR = int(data.get("max_floor", 51))
 			TOWER_AREA_ID = data.get("area_id", "endless_tower")
 			TOWER_CONFIG = data.get("config", {})
+			
+			if TOWER_CONFIG.has("reward_floors"):
+				var int_reward_floors = []
+				for floor in TOWER_CONFIG["reward_floors"]:
+					int_reward_floors.append(int(floor))
+				TOWER_CONFIG["reward_floors"] = int_reward_floors
 
 func get_max_floor() -> int:
 	return MAX_FLOOR
