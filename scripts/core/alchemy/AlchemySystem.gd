@@ -43,6 +43,9 @@ var equipped_furnace_id: String = ""
 # 已学会的丹方ID列表
 var learned_recipes: Array = []
 
+# 特殊速度加成（测试用，默认0）
+var special_bonus_speed_rate: float = 0.0
+
 func _ready():
 	pass
 
@@ -181,7 +184,7 @@ func calculate_craft_time(recipe_id: String) -> float:
 	var alchemy_bonus = get_alchemy_bonus()
 	var furnace_bonus = get_furnace_bonus()
 	
-	var final_speed = 1.0 + alchemy_bonus.speed_rate + furnace_bonus.speed_rate
+	var final_speed = 1.0 + alchemy_bonus.speed_rate + furnace_bonus.speed_rate + special_bonus_speed_rate
 	
 	return base_time / final_speed
 
