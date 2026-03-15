@@ -21,7 +21,27 @@ idle_cultivation_client/                    # 客户端（Godot）
 │   ├── network/               # 网络相关（新增）
 │   │   ├── NetworkManager.gd
 │   │   └── GameServerAPI.gd
-│   └── ...
+│   ├── managers/              # 管理器（新增）
+│   │   └── CloudSaveManager.gd
+│   ├── core/                  # 核心系统
+│   │   ├── PlayerData.gd
+│   │   ├── RealmSystem.gd
+│   │   ├── CultivationSystem.gd
+│   │   ├── Inventory.gd
+│   │   ├── ItemData.gd
+│   │   ├── SpellSystem.gd
+│   │   ├── AlchemySystem.gd
+│   │   ├── LianliSystem.gd
+│   │   └── OfflineReward.gd
+│   └── autoload/
+│       └── GameManager.gd
+├── scenes/
+│   ├── login/
+│   │   ├── Login.tscn
+│   │   ├── Register.tscn
+│   │   └── LoginModule.gd
+│   └── main/
+│       └── Main.tscn
 └── docs/OnlineSystem.md       # 本文件
 
 idle_cultivation_server/             # 服务端（Python + FastAPI）
@@ -33,19 +53,28 @@ idle_cultivation_server/             # 服务端（Python + FastAPI）
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── auth.py
-│   │   └── game.py
+│   │   ├── game.py
+│   │   └── admin.py
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── config.py
-│   │   └── security.py
+│   │   ├── security.py
+│   │   └── config_loader.py
 │   ├── db/
 │   │   ├── __init__.py
 │   │   ├── database.py
 │   │   └── models.py
 │   └── schemas/
 │       ├── __init__.py
-│       └── player.py
+│       ├── auth.py
+│       └── game.py
+├── config/                     # 配置文件软链接
+│   ├── items.json
+│   ├── realms.json
+│   ├── recipes.json
+│   └── spells.json
 ├── sql/init.sql
+├── start.sh                    # 启动脚本
 └── README.md
 ```
 
@@ -740,6 +769,13 @@ func on_request_error(response_code, error_code):
 |------|------|------|------|
 | /api/game/data | GET | 拉取存档 | 需要 |
 | /api/game/save | POST | 保存存档 | 需要 |
+| /api/game/player/breakthrough | POST | 突破境界 | 需要 |
+| /api/game/inventory/use_item | POST | 使用物品 | 需要 |
+| /api/game/battle/victory | POST | 战斗胜利 | 需要 |
+| /api/game/spell/upgrade | POST | 术法升级 | 需要 |
+| /api/game/spell/charge | POST | 术法充能 | 需要 |
+| /api/game/alchemy/learn_recipe | POST | 学习丹方 | 需要 |
+| /api/game/alchemy/start_craft | POST | 开始炼丹 | 需要 |
 
 ### 5.3 管理后台
 
@@ -747,8 +783,8 @@ func on_request_error(response_code, error_code):
 |------|------|------|------|
 | /api/admin/login | POST | 管理员登录 | - |
 | /api/admin/players | GET | 玩家列表 | 管理员 |
-| /api/admin/player/:id | GET | 玩家详情 | 管理员 |
-| /api/admin/player/:id/ban | POST | 封号 | 管理员 |
+| /api/admin/player/{id} | GET | 玩家详情 | 管理员 |
+| /api/admin/player/{id}/ban | POST | 封号 | 管理员 |
 
 ---
 
