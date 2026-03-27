@@ -17,6 +17,7 @@ var item_data: Node = null
 var spell_system: Node = null
 var spell_data: Node = null
 var alchemy_system: Node = null
+var save_manager: Node = null
 
 # UI节点引用
 var chuna_panel: Control = null
@@ -48,6 +49,11 @@ func initialize(ui: Node, player_node: Node, inv: Node, item_data_node: Node, sp
 	spell_system = spell_sys
 	spell_data = spell_dt
 	alchemy_system = alchemy_sys
+	
+	# 获取save_manager
+	var game_manager = get_node_or_null("/root/GameManager")
+	if game_manager:
+		save_manager = game_manager.get_save_manager()
 	
 	# 检查必需节点
 	_check_required_nodes()
@@ -446,12 +452,12 @@ func _on_view_button_pressed():
 func _on_use_button_pressed():
 	if current_selected_item_id.is_empty() or current_selected_index < 0:
 		return
-	
+
 	var item_info = item_data.get_item_data(current_selected_item_id) if item_data else {}
 	var content = item_info.get("content", {})
 	var effect = item_info.get("effect", {})
 	var item_name = item_info.get("name", "未知")
-	
+
 	# 处理有效果的物品
 	if not effect.is_empty():
 		var effect_type = effect.get("type", "")
@@ -558,14 +564,32 @@ func _on_use_button_pressed():
 				_add_log("未知效果类型：" + effect_type)
 				return
 		
+		# 保存当前物品ID，因为消耗物品后会被清空
+		var used_item_id = current_selected_item_id
+		
 		# 消耗物品
 		if inventory:
 			inventory.remove_item(current_selected_item_id, 1)
 		item_used.emit(current_selected_item_id)
 		update_inventory_ui()
 		_clear_item_detail_panel()
+		
+		# 根据效果类型保存相应系统
+		var is_important = item_data and item_data.is_important(used_item_id)
+		
+		match effect_type:
+			"unlock_spell":
+				# 使用解锁术法道具后，保存储纳和术法系统
+				_save_partial_systems(["inventory", "spell_system"])
+			"learn_recipe":
+				# 使用解锁丹方道具后，保存储纳和炼丹系统
+				_save_partial_systems(["inventory", "alchemy_system"])
+			_:
+				# 其他重要道具使用后保存所有系统
+				if is_important:
+					_save_all_systems()
 		return
-	
+
 	# 处理有内容的物品（如新手礼包）
 	if not content.is_empty():
 		# 检查境界限制
@@ -578,30 +602,33 @@ func _on_use_button_pressed():
 					if not realm_system.check_realm_requirement(player.realm, player.realm_level, requirement):
 						_add_log("境界不足，无法打开")
 						return
-		
+
 		for content_id in content.keys():
 			var content_count = int(content[content_id])
 			if inventory:
 				inventory.add_item(content_id, content_count)
 				# 物品添加的日志由 _on_item_added 处理
-		
+
 		# 消耗物品
 		if inventory:
 			inventory.remove_item(current_selected_item_id, 1)
 		item_used.emit(current_selected_item_id)
 		update_inventory_ui()
 		_clear_item_detail_panel()
+		
+		# 有内容的物品打开后保存所有系统
+		_save_all_systems()
 		return
-	
+
 	_add_log("该物品无法使用")
 
 func _on_discard_button_pressed():
 	if current_selected_item_id.is_empty() or current_selected_index < 0:
 		return
-	
+
 	var item_info = item_data.get_item_data(current_selected_item_id) if item_data else {}
 	var item_name = item_info.get("name", "未知")
-	
+
 	# 检查是否为重要物品（需要二次确认）
 	if item_data and item_data.is_important(current_selected_item_id):
 		_show_discard_confirm_dialog(item_name)
@@ -631,10 +658,11 @@ func _on_discard_cancelled():
 func _perform_discard():
 	if current_selected_item_id.is_empty():
 		return
-	
+
 	var item_info = item_data.get_item_data(current_selected_item_id) if item_data else {}
 	var item_name = item_info.get("name", "未知")
-	
+	var is_important = item_data and item_data.is_important(current_selected_item_id)
+
 	# 从背包中移除物品
 	if inventory:
 		inventory.remove_item(current_selected_item_id, 1)
@@ -642,6 +670,28 @@ func _perform_discard():
 		_add_log("丢弃物品: " + item_name)
 		update_inventory_ui()
 		_clear_item_detail_panel()
+		
+		# 重要物品丢弃后保存所有系统
+		if is_important:
+			_save_all_systems()
+
+func _save_all_systems():
+	if not save_manager:
+		var game_manager = get_node_or_null("/root/GameManager")
+		if game_manager:
+			save_manager = game_manager.get_save_manager()
+
+	if save_manager and save_manager.has_method("save_game"):
+		await save_manager.save_game()
+
+func _save_partial_systems(fields: Array):
+	if not save_manager:
+		var game_manager = get_node_or_null("/root/GameManager")
+		if game_manager:
+			save_manager = game_manager.get_save_manager()
+
+	if save_manager and save_manager.has_method("save_partial"):
+		await save_manager.save_partial(fields)
 
 func _on_expand_button_pressed():
 	if not inventory:

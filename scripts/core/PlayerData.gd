@@ -14,10 +14,7 @@ var health: float = 500.0
 var spirit_energy: float = 0.0
 var max_spirit_energy: float = 100.0
 
-# 玩家信息
-var nickname: String = "hsams"
-var avatar_id: String = "abstract"
-var title_id: String = ""
+
 
 # 基础属性（随境界变化）
 var base_max_health: float = 500.0
@@ -70,8 +67,8 @@ func apply_realm_stats():
 	var final_max_health = get_final_max_health()
 	health = min(health, final_max_health)
 	
-	# 确保当前灵气不超过最大灵气
-	spirit_energy = min(spirit_energy, max_spirit_energy)
+	# 突破时不限制灵气，让超过上限的灵气保留
+	# spirit_energy = min(spirit_energy, max_spirit_energy)
 
 func get_default_realm_info() -> Dictionary:
 	return {"health": 500, "attack": 50, "defense": 25}
@@ -321,10 +318,7 @@ func get_save_data() -> Dictionary:
 		"realm_level": realm_level,
 		"health": health,
 		"spirit_energy": spirit_energy,
-		"max_spirit_energy": max_spirit_energy,
-		"nickname": nickname,
-		"avatar_id": avatar_id,
-		"title_id": title_id
+		"max_spirit_energy": max_spirit_energy
 	}
 
 func apply_save_data(data: Dictionary):
@@ -338,16 +332,8 @@ func apply_save_data(data: Dictionary):
 		spirit_energy = float(data["spirit_energy"])
 	if data.has("max_spirit_energy"):
 		max_spirit_energy = float(data["max_spirit_energy"])
-	if data.has("nickname"):
-		nickname = data["nickname"]
-	if data.has("avatar_id"):
-		avatar_id = data["avatar_id"]
-	if data.has("title_id"):
-		title_id = data["title_id"]
 
 	# 重新计算可计算属性
 	apply_realm_stats()
 
-# 设置玩家昵称
-func set_nickname(new_nickname: String):
-	nickname = new_nickname
+

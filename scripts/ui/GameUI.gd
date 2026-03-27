@@ -988,49 +988,15 @@ func _init_lianli_area_buttons():
 # 副本信息缓存
 var dungeon_info_cache: Dictionary = {}
 
-# 异步更新副本按钮文本
+# 更新副本按钮文本（只使用缓存数据）
 func _update_dungeon_button_text(button: Button, dungeon_id: String, area_name: String):
-	# 先显示缓存的信息或默认值
+	# 只显示缓存的信息或默认值
 	var cached_info = dungeon_info_cache.get(dungeon_id, {"remaining_count": 3, "max_count": 3})
 	var remaining = int(cached_info.get("remaining_count", 3))
 	var max_count = int(cached_info.get("max_count", 3))
 	button.text = area_name + " (剩余: " + str(remaining) + "/" + str(max_count) + ")"
-	
-	# 异步获取副本信息并更新缓存
-	call_deferred("_update_dungeon_button_text_async", button, dungeon_id, area_name)
 
-func _update_dungeon_button_text_async(button: Button, dungeon_id: String, area_name: String):
-	# 使用协程处理异步操作
-	var timer = Timer.new()
-	add_child(timer)
-	timer.wait_time = 0.1
-	timer.one_shot = true
-	timer.start()
-	await timer.timeout
-	timer.queue_free()
-	
-	if api:
-		var result = await api.get_dungeon_info()
-		if result.success and result.has("dungeon_data"):
-			var dungeon_data = result.dungeon_data
-			if dungeon_data.has(dungeon_id):
-				var info = dungeon_data[dungeon_id]
-				var remaining = int(info.get("remaining_count", 0))
-				var max_count = int(info.get("max_count", 3))
-				# 更新缓存
-				dungeon_info_cache[dungeon_id] = {"remaining_count": remaining, "max_count": max_count}
-				# 更新按钮文本
-				button.text = area_name + " (剩余: " + str(remaining) + "/" + str(max_count) + ")"
-			else:
-				# 更新缓存为0
-				dungeon_info_cache[dungeon_id] = {"remaining_count": 0, "max_count": 3}
-				button.text = area_name + " (剩余: 0/3)"
-		else:
-			# 获取失败，保持缓存不变
-			pass
-	else:
-		# 无API实例，保持缓存不变
-		pass
+
 
 # 更新历练区域按钮显示（用于刷新每日次数等）
 func update_lianli_area_buttons_display():
@@ -1189,20 +1155,16 @@ func update_account_ui():
 	if not game_manager:
 		return
 	
-	var player = game_manager.get_player()
-	if not player:
-		return
-	
-	# 从player数据中获取账号信息
-	var player_data = player.get_save_data()
+	# 从GameManager中获取账号信息
+	var account_info = game_manager.get_account_info()
 	
 	# 更新昵称显示
-	var nickname = player_data.get("nickname", "hsams")
+	var nickname = account_info.get("nickname", "hsams")
 	if player_name_label_top:
 		player_name_label_top.text = nickname
 	
 	# 更新头像显示
-	var avatar_id = player_data.get("avatar_id", "abstract")
+	var avatar_id = account_info.get("avatar_id", "abstract")
 	if avatar_texture:
 		const AvatarConfig = preload("res://scripts/core/avatar/AvatarConfig.gd")
 		var avatar_path = AvatarConfig.get_avatar_path(avatar_id)

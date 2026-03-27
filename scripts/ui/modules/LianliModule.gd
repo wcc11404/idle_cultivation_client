@@ -28,6 +28,7 @@ var chuna_module: Node = null
 var log_manager: Node = null
 var alchemy_module: Node = null
 var api: Node = null
+var save_manager: Node = null
 
 # UI节点引用（由GameUI设置）
 var lianli_panel: Control = null
@@ -76,6 +77,11 @@ func initialize(ui: Node, player_node: Node, lianli_sys: Node,
 	log_manager = log_mgr
 	alchemy_module = alchemy_mod
 	api = game_api
+	
+	# 获取save_manager
+	var game_manager = get_node_or_null("/root/GameManager")
+	if game_manager:
+		save_manager = game_manager.get_save_manager()
 
 # 显示历练面板
 func show_lianli_panel():
@@ -510,6 +516,9 @@ func on_battle_ended(victory: bool, loot: Array, enemy_name: String):
 			else:
 				# 无API实例，使用本地扣减
 				lianli_system.use_daily_dungeon_count(current_lianli_area_id)
+		
+		# 破境草洞穴或无尽塔战斗胜利后保存
+		_save_after_battle_victory()
 	else:
 		# 战斗失败
 		if lianli_status_label:
@@ -517,6 +526,23 @@ func on_battle_ended(victory: bool, loot: Array, enemy_name: String):
 			lianli_status_label.modulate = Color.RED
 
 	battle_ended.emit(victory, loot, enemy_name)
+
+func _save_after_battle_victory():
+	var should_save = false
+	
+	if lianli_system and lianli_system.is_in_endless_tower():
+		should_save = true
+	elif lianli_area_data and current_lianli_area_id == "foundation_herb_cave":
+		should_save = true
+	
+	if should_save:
+		if not save_manager:
+			var game_manager = get_node_or_null("/root/GameManager")
+			if game_manager:
+				save_manager = game_manager.get_save_manager()
+		
+		if save_manager and save_manager.has_method("save_partial"):
+			await save_manager.save_partial(["inventory", "lianli_system", "player"])
 
 # 异步处理副本完成
 func _finish_dungeon_async(dungeon_id: String):

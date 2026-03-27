@@ -79,5 +79,4 @@ func get_use_text(item_id: String) -> String:
 func is_important(item_id: String) -> bool:
 	var data = get_item_data(item_id)
 	var quality = data.get("quality", 0)
-	var item_type = data.get("type", ItemType.MATERIAL)
-	return quality >= 4 or item_type == ItemType.UNLOCK
+	return quality >= 4

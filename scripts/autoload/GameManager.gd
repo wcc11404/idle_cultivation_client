@@ -192,3 +192,10 @@ func get_last_online_time() -> int:
 
 func set_last_online_time(time: int):
 	last_online_time = time
+
+func get_save_data() -> Dictionary:
+	return account_info
+
+func apply_save_data(data: Dictionary):
+	account_info = data
+	account_logged_in.emit(data)

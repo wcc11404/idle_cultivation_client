@@ -17,6 +17,7 @@ var cultivation_system: Node = null
 var lianli_system: Node = null
 var item_data: Node = null
 var alchemy_module: Node = null
+var save_manager: Node = null
 
 # UI节点引用（由GameUI设置）
 var cultivation_panel: Control = null
@@ -55,6 +56,12 @@ func initialize(ui: Node, player_node: Node, cult_sys: Node, lianli_sys: Node = 
 	lianli_system = lianli_sys
 	item_data = item_data_ref
 	alchemy_module = alchemy_mod
+	
+	# 获取save_manager
+	var game_manager = get_node_or_null("/root/GameManager")
+	if game_manager:
+		save_manager = game_manager.get_save_manager()
+	
 	_is_initialized = true
 	
 	# 连接修炼系统日志信号
@@ -150,6 +157,9 @@ func _handle_breakthrough_success(result: Dictionary):
 		log_message.emit("进入" + new_realm + "！气血值已恢复满！")
 	
 	breakthrough_succeeded.emit(result)
+	
+	# 保存储纳和player字段
+	_save_after_breakthrough()
 
 # 处理突破失败
 func _handle_breakthrough_failure(result: Dictionary):
@@ -192,6 +202,15 @@ func _build_breakthrough_message(stone_cost: int, energy_cost: int, materials: D
 	
 	msg += "，" + suffix
 	return msg
+
+func _save_after_breakthrough():
+	if not save_manager:
+		var game_manager = get_node_or_null("/root/GameManager")
+		if game_manager:
+			save_manager = game_manager.get_save_manager()
+	
+	if save_manager and save_manager.has_method("save_partial"):
+		await save_manager.save_partial(["inventory", "player"])
 
 # ==================== UI更新功能 ====================
 

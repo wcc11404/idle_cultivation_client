@@ -61,6 +61,42 @@ func save_game() -> bool:
 				_force_logout()
 			return false
 
+func save_partial(fields: Array) -> bool:
+	var all_data = collect_game_data()
+	var partial_data = {}
+	
+	for field in fields:
+		if all_data.has(field):
+			partial_data[field] = all_data[field]
+	
+	if partial_data.is_empty():
+		return false
+	
+	api.network_manager.load_token()
+	var result = await api.save_game(partial_data)
+	
+	if result.success:
+		last_save_time = Time.get_unix_time_from_system()
+		save_failure_count = 0
+		return true
+	else:
+		var is_401 = false
+		if result.has("response_code"):
+			var response_code = result.response_code
+			if response_code is String:
+				is_401 = response_code == "401"
+			elif response_code is int:
+				is_401 = response_code == 401
+		
+		if is_401:
+			_force_logout()
+			return false
+		else:
+			save_failure_count += 1
+			if save_failure_count >= MAX_SAVE_FAILURES:
+				_force_logout()
+			return false
+
 func load_game() -> bool:
 	var result = await api.load_game()
 	if result.success:
@@ -81,6 +117,7 @@ func collect_game_data() -> Dictionary:
 	var alchemy_system = game_manager.get_alchemy_system()
 	
 	return {
+		"account_info": game_manager.get_save_data(),
 		"player": player.get_save_data() if player else {},
 		"inventory": inventory.get_save_data() if inventory else {},
 		"spell_system": spell_system.get_save_data() if spell_system else {},
@@ -94,6 +131,10 @@ func apply_game_data(data: Dictionary):
 	if not game_manager:
 		print("GameManager not found")
 		return
+	
+	# 处理账号信息
+	if data.has("account_info"):
+		game_manager.apply_save_data(data.account_info)
 	
 	var player = game_manager.get_player()
 	var inventory = game_manager.get_inventory()

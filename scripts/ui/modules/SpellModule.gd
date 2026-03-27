@@ -14,6 +14,7 @@ var game_ui: Node = null
 var player: Node = null
 var spell_system: Node = null
 var spell_data: Node = null
+var save_manager: Node = null
 
 # UI节点引用
 var spell_panel: Control = null
@@ -41,6 +42,11 @@ func initialize(ui: Node, player_node: Node, spell_sys: Node, spell_dt: Node):
 	player = player_node
 	spell_system = spell_sys
 	spell_data = spell_dt
+	
+	# 获取save_manager
+	var game_manager = get_node_or_null("/root/GameManager")
+	if game_manager:
+		save_manager = game_manager.get_save_manager()
 	
 	_setup_signals()
 
@@ -406,9 +412,6 @@ func _on_spell_view_button_pressed(spell_id: String):
 
 func _on_spell_equip_button_pressed(spell_id: String):
 	"""装备/卸下术法"""
-	if not spell_system:
-		return
-	
 	var spell_info = spell_system.get_spell_info(spell_id)
 	if spell_info.is_empty():
 		_add_log("获取术法信息失败")
@@ -419,6 +422,8 @@ func _on_spell_equip_button_pressed(spell_id: String):
 		var result = spell_system.unequip_spell(spell_id)
 		if result.success:
 			_add_log("卸下术法：" + spell_info.get("name", ""))
+			# 卸下术法后保存术法系统
+			_save_spell_system()
 		else:
 			_add_log(result.reason)
 			return  # 卸下失败，不刷新UI
@@ -427,12 +432,23 @@ func _on_spell_equip_button_pressed(spell_id: String):
 		var result = spell_system.equip_spell(spell_id)
 		if result.success:
 			_add_log("装备术法：" + spell_info.get("name", ""))
+			# 装备术法后保存术法系统
+			_save_spell_system()
 		else:
 			_add_log(result.reason)
 			return  # 装备失败，不刷新UI
 	
 	# 刷新UI
 	_init_spell_ui()
+
+func _save_spell_system():
+	if not save_manager:
+		var game_manager = get_node_or_null("/root/GameManager")
+		if game_manager:
+			save_manager = game_manager.get_save_manager()
+	
+	if save_manager and save_manager.has_method("save_partial"):
+		await save_manager.save_partial(["spell_system"])
 
 func _on_spell_upgrade_button_pressed():
 	"""升级术法"""

@@ -36,33 +36,6 @@
 			"description": "制作破境丹药所必须的草药，蕴含突破境界的神秘力量",
 			"icon": "res://assets/items/mat_herb.png"
 		},
-		"mat_crystal": {
-			"id": "mat_crystal",
-			"name": "灵石髓",
-			"type": 1,
-			"quality": 2,
-			"max_stack": 99,
-			"description": "用于装备精炼的稀有矿物",
-			"icon": "res://assets/items/mat_crystal.png"
-		},
-		"mat_jade": {
-			"id": "mat_jade",
-			"name": "翡翠",
-			"type": 1,
-			"quality": 3,
-			"max_stack": 99,
-			"description": "用于装备进阶的珍稀玉石",
-			"icon": "res://assets/items/mat_jade.png"
-		},
-		"mat_dragon": {
-			"id": "mat_dragon",
-			"name": "龙晶",
-			"type": 1,
-			"quality": 4,
-			"max_stack": 99,
-			"description": "用于装备觉醒的神级材料",
-			"icon": "res://assets/items/mat_dragon.png"
-		},
 		"bug_pill": {
 			"id": "bug_pill",
 			"name": "bug丹",

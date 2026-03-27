@@ -41,14 +41,7 @@ func _get_api_instance():
 		var cloud_save_manager = game_manager.get_save_manager()
 		if cloud_save_manager and "api" in cloud_save_manager:
 			api = cloud_save_manager.api
-			if api:
-				print("SettingsModule: API实例获取成功")
-			else:
-				print("SettingsModule: API实例为null")
-		else:
-			print("SettingsModule: cloud_save_manager没有api属性")
-	else:
-		print("SettingsModule: GameManager未找到")
+			# API实例获取完成
 
 func _setup_signals():
 	# 连接按钮信号
@@ -139,9 +132,12 @@ func _on_confirm_nickname_pressed():
 	# 直接更新玩家数据并保存
 	log_message.emit("正在修改昵称...")
 	
-	# 更新玩家数据
-	if player and player.has_method("set_nickname"):
-		player.set_nickname(new_nickname)
+	# 更新GameManager中的account_info
+	var game_manager = get_node_or_null("/root/GameManager")
+	if game_manager:
+		var account_info = game_manager.get_account_info()
+		account_info["nickname"] = new_nickname
+		game_manager.set_account_info(account_info)
 	
 	# 触发保存
 	var save_result = await _on_save_pressed()
@@ -231,15 +227,17 @@ func _create_rank_header() -> HBoxContainer:
 	var rank_header = Label.new()
 	rank_header.text = "排名"
 	rank_header.size_flags_horizontal = Control.SIZE_EXPAND
+	rank_header.size_flags_stretch_ratio = 10.0
 	rank_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank_header.add_theme_font_size_override("font_size", 18)
 	rank_header.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
 	header.add_child(rank_header)
 	
-	# 称号表头 - 10%
+	# 称号表头 - 20%
 	var title_header = Label.new()
 	title_header.text = "称号"
 	title_header.size_flags_horizontal = Control.SIZE_EXPAND
+	title_header.size_flags_stretch_ratio = 20.0
 	title_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_header.add_theme_font_size_override("font_size", 18)
 	title_header.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
@@ -249,6 +247,7 @@ func _create_rank_header() -> HBoxContainer:
 	var nickname_header = Label.new()
 	nickname_header.text = "昵称"
 	nickname_header.size_flags_horizontal = Control.SIZE_EXPAND
+	nickname_header.size_flags_stretch_ratio = 30.0
 	nickname_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	nickname_header.add_theme_font_size_override("font_size", 18)
 	nickname_header.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
@@ -258,15 +257,17 @@ func _create_rank_header() -> HBoxContainer:
 	var realm_header = Label.new()
 	realm_header.text = "境界"
 	realm_header.size_flags_horizontal = Control.SIZE_EXPAND
+	realm_header.size_flags_stretch_ratio = 25.0
 	realm_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	realm_header.add_theme_font_size_override("font_size", 18)
 	realm_header.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
 	header.add_child(realm_header)
 	
-	# 灵气表头 - 25%
+	# 灵气表头 - 15%
 	var spirit_header = Label.new()
 	spirit_header.text = "灵气"
 	spirit_header.size_flags_horizontal = Control.SIZE_EXPAND
+	spirit_header.size_flags_stretch_ratio = 15.0
 	spirit_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	spirit_header.add_theme_font_size_override("font_size", 18)
 	spirit_header.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
@@ -279,35 +280,38 @@ func _create_rank_item(rank_data: Dictionary) -> HBoxContainer:
 	var item = HBoxContainer.new()
 	item.custom_minimum_size = Vector2(0, 50)
 	
-	# 排名
+	# 排名 - 10%
 	var rank_label = Label.new()
 	rank_label.text = str(int(rank_data.get("rank", 0)))
 	rank_label.size_flags_horizontal = Control.SIZE_EXPAND
+	rank_label.size_flags_stretch_ratio = 10.0
 	rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank_label.add_theme_font_size_override("font_size", 20)
 	rank_label.add_theme_color_override("font_color", Color(0.2, 0.2, 0.2, 1))
 	item.add_child(rank_label)
 	
-	# 称号 - 直接显示服务器返回值
+	# 称号 - 20%
 	var title_label = Label.new()
 	var title_id = rank_data.get("title_id", "")
 	title_label.text = title_id
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND
+	title_label.size_flags_stretch_ratio = 20.0
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.add_theme_font_size_override("font_size", 16)
 	title_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.2, 1))
 	item.add_child(title_label)
 	
-	# 昵称
+	# 昵称 - 30%
 	var nickname_label = Label.new()
 	nickname_label.text = rank_data.get("nickname", "未知")
 	nickname_label.size_flags_horizontal = Control.SIZE_EXPAND
+	nickname_label.size_flags_stretch_ratio = 30.0
 	nickname_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	nickname_label.add_theme_font_size_override("font_size", 18)
 	nickname_label.add_theme_color_override("font_color", Color(0.2, 0.2, 0.2, 1))
 	item.add_child(nickname_label)
 	
-	# 境界 - 使用"炼气期 一层"格式
+	# 境界 - 25%
 	var realm_label = Label.new()
 	var realm_name = rank_data.get("realm", "未知")
 	var level = int(rank_data.get("level", 1))
@@ -337,15 +341,18 @@ func _create_rank_item(rank_data: Dictionary) -> HBoxContainer:
 			level_text = "第" + str(level) + "层"
 	realm_label.text = realm_name + " " + level_text
 	realm_label.size_flags_horizontal = Control.SIZE_EXPAND
+	realm_label.size_flags_stretch_ratio = 25.0
 	realm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	realm_label.add_theme_font_size_override("font_size", 16)
 	realm_label.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
 	item.add_child(realm_label)
 	
-	# 灵气
+	# 灵气 - 15%
 	var spirit_label = Label.new()
-	spirit_label.text = str(int(rank_data.get("spirit_energy", 0)))
+	var spirit_energy = int(rank_data.get("spirit_energy", 0))
+	spirit_label.text = UIUtils.format_number(spirit_energy)
 	spirit_label.size_flags_horizontal = Control.SIZE_EXPAND
+	spirit_label.size_flags_stretch_ratio = 15.0
 	spirit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	spirit_label.add_theme_font_size_override("font_size", 16)
 	spirit_label.add_theme_color_override("font_color", Color(0.5, 0.3, 0.8, 1))
