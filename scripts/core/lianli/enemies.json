@@ -44,7 +44,6 @@
 		},
 		"iron_back_wolf": {
 			"name": "铁背狼王",
-			"is_elite": true,
 			"growth": {
 				"health_base": 50,
 				"health_growth": 1.11,
@@ -58,7 +57,6 @@
 		},
 		"herb_guardian": {
 			"name": "破境草看守者",
-			"is_elite": true,
 			"growth": {
 				"health_base": 50,
 				"health_growth": 1.11,

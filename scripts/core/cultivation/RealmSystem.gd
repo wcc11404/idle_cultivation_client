@@ -11,7 +11,7 @@ func _ready():
 	_load_config()
 
 func _load_config():
-	var file = FileAccess.open("res://scripts/core/realm/realms.json", FileAccess.READ)
+	var file = FileAccess.open("res://scripts/core/cultivation/realms.json", FileAccess.READ)
 	if file:
 		var json_text = file.get_as_text()
 		var data = JSON.parse_string(json_text)

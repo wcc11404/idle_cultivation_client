@@ -1,6 +1,6 @@
 extends Control
 
-const GameServerAPI = preload("res://scripts/network/GameServerAPI.gd")
+const GameServerAPI = preload("res://scripts/api/GameServerAPI.gd")
 const CloudSaveManager = preload("res://scripts/managers/CloudSaveManager.gd")
 const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
 
@@ -47,14 +47,15 @@ func check_auto_login():
 	if has_token:
 		# 验证Token是否有效
 		var refresh_result = await api.refresh_token()
-		if refresh_result.success:
+		if refresh_result.get("success", false):
 			# Token有效，自动填充账号信息
-			api.network_manager.save_token(refresh_result.token)
+			var refreshed_token := str(refresh_result.get("token", ""))
+			if not refreshed_token.is_empty():
+				api.network_manager.save_token(refreshed_token)
 			# 从 account_info 中获取用户名并填充
-			if refresh_result.has("account_info"):
-				var account_info = refresh_result.account_info
-				if account_info.has("username"):
-					username_input.text = account_info.username
+			var account_info = refresh_result.get("account_info", {})
+			if account_info is Dictionary and account_info.has("username"):
+				username_input.text = str(account_info.get("username", ""))
 			# 显示提示信息
 			show_message("请点击登录按钮继续")
 		else:
@@ -78,9 +79,11 @@ func _on_login_pressed():
 	
 	# 无论是否有Token，都使用输入框中的账号和密码进行登录
 	var login_result = await api.login(username, password)
-	if login_result.success:
+	if login_result.get("success", false):
 		# 登录成功，保存Token
-		api.network_manager.save_token(login_result.token)
+		var login_token := str(login_result.get("token", ""))
+		if not login_token.is_empty():
+			api.network_manager.save_token(login_token)
 		
 		# 保存账号和密码到本地，以便下次自动填充
 		save_account_info(username, password)
@@ -88,21 +91,22 @@ func _on_login_pressed():
 		# 保存账号信息到 GameManager
 		var game_manager = get_node_or_null("/root/GameManager")
 		if game_manager and login_result.has("account_info"):
-			game_manager.set_account_info(login_result.account_info)
+			game_manager.set_account_info(login_result.get("account_info", {}))
 		
 		# 应用游戏数据
-		cloud_save.apply_game_data(login_result.data)
+		cloud_save.apply_game_data(login_result.get("data", {}))
 		
 		# 直接进入游戏界面
 		enter_game()
 	else:
-		# 登录失败
-		var error_message = "登录失败"
-		if login_result.has("message") and typeof(login_result.message) == TYPE_STRING:
-			error_message = login_result.message
-		elif login_result.has("detail") and typeof(login_result.detail) == TYPE_STRING:
-			error_message = login_result.detail
-		show_message(error_message)
+		# 登录异常，按要求技术性报错仅打印在控制台，业务逻辑失败才反馈 UI
+		var err_msg = api.network_manager.get_api_error_text_for_ui(login_result, "登录失败")
+		if not err_msg.is_empty():
+			show_message(err_msg)
+		else:
+			# 这里是技术性报错，不显示详细原因，仅提示常规性异常
+			show_message("登录异常，请检查网络或稍后重试")
+			print("[Login Technical Error] " + str(login_result))
 
 func _on_register_pressed():
 	var username = username_input.text.strip_edges()
@@ -123,28 +127,30 @@ func _on_register_pressed():
 	show_message("注册中...")
 	
 	var register_result = await api.register(username, password)
-	if register_result.success:
+	if register_result.get("success", false):
 		show_message("注册成功，请登录")
 	else:
-		var error_message = "注册失败"
-		if register_result.has("message") and typeof(register_result.message) == TYPE_STRING:
-			error_message = register_result.message
-		elif register_result.has("detail") and typeof(register_result.detail) == TYPE_STRING:
-			error_message = register_result.detail
-		show_message(error_message)
+		# 注册异常处理
+		var err_msg = api.network_manager.get_api_error_text_for_ui(register_result, "注册失败")
+		if not err_msg.is_empty():
+			show_message(err_msg)
+		else:
+			show_message("注册异常，请稍后重试")
+			print("[Register Technical Error] " + str(register_result))
 
 func load_game_data():
 	show_message("加载游戏数据...")
 	
 	var load_result = await api.load_game()
-	if load_result.success:
-		cloud_save.apply_game_data(load_result.data)
+	if load_result.get("success", false):
+		cloud_save.apply_game_data(load_result.get("data", {}))
 		enter_game()
 	else:
-		var error_message = "加载数据失败，请重新登录"
-		if load_result.has("message") and typeof(load_result.message) == TYPE_STRING:
-			error_message = load_result.message
-		show_message(error_message)
+		var err_msg = api.network_manager.get_api_error_text_for_ui(load_result, "加载数据失败")
+		if not err_msg.is_empty():
+			show_message(err_msg)
+		else:
+			show_message("同步存档失败，请重新登录")
 		api.network_manager.clear_token()
 
 func enter_game():
@@ -157,10 +163,11 @@ func claim_offline_reward():
 	show_message("获取离线奖励中...")
 	
 	var result = await api.claim_offline_reward()
-	if result.success:
-		if result.has("offline_reward") and result.offline_reward != null:
+	if result.get("success", false):
+		var offline_reward = result.get("offline_reward", null)
+		if offline_reward != null and offline_reward is Dictionary:
 			# 成功且有奖励
-			show_offline_reward(result.offline_reward, result.offline_seconds)
+			show_offline_reward(offline_reward, int(result.get("offline_seconds", 0)))
 		else:
 			# 成功但无奖励，直接进入游戏
 			enter_game()

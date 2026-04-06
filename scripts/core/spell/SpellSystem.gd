@@ -1,7 +1,7 @@
 class_name SpellSystem extends Node
 
-signal spell_equipped(spell_id: String, spell_type: int)
-signal spell_unequipped(spell_id: String, spell_type: int)
+signal spell_equipped(spell_id: String, spell_type: String)
+signal spell_unequipped(spell_id: String, spell_type: String)
 signal spell_upgraded(spell_id: String, new_level: int)
 signal spell_obtained(spell_id: String)
 signal spell_used(spell_id: String)
@@ -9,17 +9,12 @@ signal spell_used(spell_id: String)
 var player: Node = null
 var spell_data: Node = null
 
-# 玩家术法数据：{spell_id: {obtained: bool, level: int, use_count: int, charged_spirit: int}}
-# 注：equipped 状态通过 equipped_spells 推导，不单独存储
 var player_spells: Dictionary = {}
 
-# 当前装备的术法：{spell_type: [spell_id, ...]}
 var equipped_spells: Dictionary = {}
 
-# 战斗系统引用（用于检测是否在战斗中）
 var lianli_system: Node = null
 
-# 主动术法触发概率上限（保证至少20%概率普攻）
 const MAX_TOTAL_TRIGGER_CHANCE: float = 0.80
 
 func _ready():
@@ -36,44 +31,42 @@ func set_lianli_system(lianli_sys: Node):
 	lianli_system = lianli_sys
 
 func _init_player_spells():
-	# 初始化所有术法为未获取状态
 	if spell_data:
-		for spell_id in spell_data.get_all_spell_ids():
+		var all_spell_ids = spell_data.get_all_spell_ids()
+		
+		for spell_id in all_spell_ids:
 			player_spells[spell_id] = {
 				"obtained": false,
 				"level": 0,
 				"use_count": 0,
 				"charged_spirit": 0
 			}
-		# 初始化装备槽位（杂学术法无装备概念）
 		equipped_spells = {
-			spell_data.SpellType.BREATHING: [],
-			spell_data.SpellType.ACTIVE: [],
-			spell_data.SpellType.PASSIVE: []
+			"breathing": [],
+			"active": [],
+			"opening": [],
+			"production": []
 		}
 
-# 检查是否在战斗中
 func _is_in_battle() -> bool:
 	if lianli_system:
 		return lianli_system.is_in_battle
 	return false
 
-# 获取术法
 func obtain_spell(spell_id: String) -> bool:
 	if not player_spells.has(spell_id):
 		return false
 	
 	if player_spells[spell_id].obtained:
-		return false  # 已获取
+		return false
 	
 	player_spells[spell_id].obtained = true
 	player_spells[spell_id].level = 1
 	spell_obtained.emit(spell_id)
 	return true
 
-# 装备术法
 func equip_spell(spell_id: String) -> Dictionary:
-	var result = {"success": false, "reason": "", "spell_id": spell_id, "spell_type": -1}
+	var result = {"success": false, "reason": "", "spell_id": spell_id, "spell_type": ""}
 	
 	if _is_in_battle():
 		result.reason = "战斗中无法装备术法"
@@ -95,20 +88,20 @@ func equip_spell(spell_id: String) -> Dictionary:
 	var limit = spell_data.get_equipment_limit(spell_type)
 	var type_name = spell_data.get_spell_type_name(spell_type)
 	
-	# 检查是否已达装备上限（-1表示无限制）
-	if limit >= 0 and equipped_spells[spell_type].size() >= limit:
+	if limit >= 0 and equipped_spells.has(spell_type) and equipped_spells[spell_type].size() >= limit:
 		result.reason = type_name + "装备数量达到上限（" + str(limit) + "个），请先卸下已装备的术法"
 		return result
 	
+	if not equipped_spells.has(spell_type):
+		equipped_spells[spell_type] = []
 	equipped_spells[spell_type].append(spell_id)
 	spell_equipped.emit(spell_id, spell_type)
 	result.success = true
 	result.spell_type = spell_type
 	return result
 
-# 卸下术法
 func unequip_spell(spell_id: String) -> Dictionary:
-	var result = {"success": false, "reason": "", "spell_id": spell_id, "spell_type": -1}
+	var result = {"success": false, "reason": "", "spell_id": spell_id, "spell_type": ""}
 	
 	if _is_in_battle():
 		result.reason = "战斗中无法卸下术法"
@@ -123,13 +116,19 @@ func unequip_spell(spell_id: String) -> Dictionary:
 		return result
 	
 	var spell_type = spell_data.get_spell_type(spell_id)
-	equipped_spells[spell_type].erase(spell_id)
+	if equipped_spells.has(spell_type):
+		equipped_spells[spell_type].erase(spell_id)
 	spell_unequipped.emit(spell_id, spell_type)
 	result.success = true
 	result.spell_type = spell_type
 	return result
 
-# 检查术法是否已装备
+func get_player_spells() -> Dictionary:
+	return player_spells
+
+func get_equipped_spells() -> Dictionary:
+	return equipped_spells
+
 func is_spell_equipped(spell_id: String) -> bool:
 	if not player_spells.has(spell_id):
 		return false
@@ -137,19 +136,16 @@ func is_spell_equipped(spell_id: String) -> bool:
 	var spell_type = spell_data.get_spell_type(spell_id)
 	return spell_id in equipped_spells.get(spell_type, [])
 
-# 获取已装备术法数量
-func get_equipped_count(spell_type: int) -> int:
+func get_equipped_count(spell_type: String) -> int:
 	if equipped_spells.has(spell_type):
 		return equipped_spells[spell_type].size()
 	return 0
 
-# 获取装备槽位上限
-func get_equipment_limit(spell_type: int) -> int:
+func get_equipment_limit(spell_type: String) -> int:
 	if spell_data:
 		return spell_data.get_equipment_limit(spell_type)
 	return 1
 
-# 升级术法
 func upgrade_spell(spell_id: String) -> Dictionary:
 	var result = {"success": false, "reason": "", "spell_id": spell_id, "new_level": 0}
 	
@@ -175,20 +171,16 @@ func upgrade_spell(spell_id: String) -> Dictionary:
 	var spirit_cost = level_data.get("spirit_cost", 0)
 	var use_count_required = level_data.get("use_count_required", 0)
 	
-	# 检查使用次数
 	if spell_info.use_count < use_count_required:
 		result.reason = "使用次数不足（" + str(spell_info.use_count) + "/" + str(use_count_required) + "）"
 		return result
 	
-	# 检查已充灵气
 	if spell_info.charged_spirit < spirit_cost:
 		result.reason = "术法灵气不足（" + str(spell_info.charged_spirit) + "/" + str(spirit_cost) + "）"
 		return result
 	
-	# 扣除已充灵气并升级
 	spell_info.charged_spirit -= spirit_cost
 	spell_info.level = next_level
-	# 升级后清空使用次数
 	spell_info.use_count = 0
 	spell_upgraded.emit(spell_id, next_level)
 	
@@ -196,29 +188,24 @@ func upgrade_spell(spell_id: String) -> Dictionary:
 	result.new_level = next_level
 	return result
 
-# 增加术法使用次数
 func add_spell_use_count(spell_id: String):
 	if player_spells.has(spell_id) and player_spells[spell_id].obtained:
 		var spell_info = player_spells[spell_id]
 		var spell_config = spell_data.get_spell_data(spell_id)
 		var max_level = spell_config.get("max_level", 3)
 		
-		# 如果已经达到最高等级，不再增加使用次数
 		if spell_info.level >= max_level:
 			return
 		
-		# 获取当前等级所需使用次数
 		var level_data = spell_data.get_spell_level_data(spell_id, spell_info.level)
 		var use_count_required = level_data.get("use_count_required", 0)
 		
-		# 如果已达到当前等级需求的使用次数，不再增加
 		if spell_info.use_count >= use_count_required:
 			return
 		
 		player_spells[spell_id].use_count += 1
 		spell_used.emit(spell_id)
 
-# 获取术法信息
 func get_spell_info(spell_id: String) -> Dictionary:
 	if not player_spells.has(spell_id) or not spell_data:
 		return {}
@@ -229,8 +216,8 @@ func get_spell_info(spell_id: String) -> Dictionary:
 	return {
 		"id": spell_id,
 		"name": config.get("name", ""),
-		"type": config.get("type", 0),
-		"type_name": spell_data.get_spell_type_name(config.get("type", 0)),
+		"type": config.get("type", "active"),
+		"type_name": spell_data.get_spell_type_name(config.get("type", "active")),
 		"description": config.get("description", ""),
 		"obtained": player_info.obtained,
 		"level": player_info.level,
@@ -240,25 +227,21 @@ func get_spell_info(spell_id: String) -> Dictionary:
 		"charged_spirit": player_info.charged_spirit
 	}
 
-# 获取所有术法信息（按类型分类）
 func get_all_spells_by_type() -> Dictionary:
-	var result = {}
-	if spell_data:
-		result = {
-			spell_data.SpellType.BREATHING: [],
-			spell_data.SpellType.ACTIVE: [],
-			spell_data.SpellType.PASSIVE: [],
-			spell_data.SpellType.MISC: []
-		}
+	var result = {
+		"breathing": [],
+		"active": [],
+		"opening": [],
+		"production": []
+	}
 	
 	for spell_id in player_spells.keys():
 		var info = get_spell_info(spell_id)
-		if not info.is_empty():
+		if not info.is_empty() and result.has(info.type):
 			result[info.type].append(info)
 	
 	return result
 
-# 获取属性加成（所有已获取的术法）
 func get_attribute_bonuses() -> Dictionary:
 	var bonuses = {
 		"attack": 1.0,
@@ -282,19 +265,17 @@ func get_attribute_bonuses() -> Dictionary:
 		
 		for attr in attribute_bonus.keys():
 			if attr == "speed":
-				bonuses.speed += attribute_bonus[attr]  # 加法
+				bonuses.speed += attribute_bonus[attr]
 			else:
-				bonuses[attr] *= attribute_bonus[attr]  # 乘法
+				bonuses[attr] *= attribute_bonus[attr]
 	
 	return bonuses
 
-# 获取装备的吐纳术法效果（用于修炼时气血值回复）
-# 支持多个吐纳术法效果叠加
 func get_equipped_breathing_heal_effect() -> Dictionary:
 	if not spell_data:
 		return {"heal_amount": 0.0, "spell_ids": []}
 	
-	var breathing_spells = equipped_spells.get(spell_data.SpellType.BREATHING, [])
+	var breathing_spells = equipped_spells.get("breathing", [])
 	if breathing_spells.is_empty():
 		return {"heal_amount": 0.0, "spell_ids": []}
 	
@@ -309,7 +290,7 @@ func get_equipped_breathing_heal_effect() -> Dictionary:
 		var level_data = spell_data.get_spell_level_data(breathing_spell_id, spell_info.level)
 		var effect = level_data.get("effect", {})
 		
-		if effect.get("type") == "passive_heal":
+		if effect.get("effect_type") == "passive_heal":
 			var heal_percent = effect.get("heal_percent", 0.0)
 			total_heal_percent += heal_percent
 			valid_spell_ids.append(breathing_spell_id)
@@ -319,7 +300,6 @@ func get_equipped_breathing_heal_effect() -> Dictionary:
 		"spell_ids": valid_spell_ids
 	}
 
-# 给术法充灵气
 func charge_spell_spirit(spell_id: String, amount: int) -> Dictionary:
 	var result = {"success": false, "reason": "", "spell_id": spell_id, "charged_amount": 0}
 	
@@ -368,7 +348,6 @@ func charge_spell_spirit(spell_id: String, amount: int) -> Dictionary:
 	
 	return result
 
-# 获取装备的术法效果（所有装备的术法）
 func get_equipped_spell_effects() -> Array:
 	var effects = []
 	
@@ -388,8 +367,7 @@ func get_equipped_spell_effects() -> Array:
 	
 	return effects
 
-# 获取指定类型的装备术法效果（返回数组，因为可能有多个）
-func get_equipped_spell_effects_by_type(spell_type: int) -> Array:
+func get_equipped_spell_effects_by_type(spell_type: String) -> Array:
 	var effects = []
 	
 	if not spell_data:
@@ -404,7 +382,6 @@ func get_equipped_spell_effects_by_type(spell_type: int) -> Array:
 		var level_data = spell_data.get_spell_level_data(spell_id, spell_info.level)
 		var original_effect = level_data.get("effect", {})
 		
-		# 创建新的字典，避免修改原始配置
 		var effect = original_effect.duplicate()
 		effect["spell_id"] = spell_id
 		effect["spell_name"] = spell_data.get_spell_name(spell_id)
@@ -412,17 +389,14 @@ func get_equipped_spell_effects_by_type(spell_type: int) -> Array:
 	
 	return effects
 
-# 触发攻击术法（按概率）- 带权重上限保护
 func trigger_attack_spell() -> Dictionary:
 	if not spell_data:
 		return {"triggered": false, "is_normal_attack": true}
 	
-	# 获取所有装备的主动术法
-	var active_spells = equipped_spells.get(spell_data.SpellType.ACTIVE, [])
+	var active_spells = equipped_spells.get("active", [])
 	if active_spells.is_empty():
 		return {"triggered": false, "is_normal_attack": true}
 	
-	# 收集所有主动术法的触发概率
 	var spell_chances = []
 	var total_chance = 0.0
 	
@@ -434,7 +408,7 @@ func trigger_attack_spell() -> Dictionary:
 		var level_data = spell_data.get_spell_level_data(spell_id, spell_info.level)
 		var effect = level_data.get("effect", {})
 		
-		if effect.get("type") == "active_damage":
+		if effect.get("effect_type") == "instant_damage":
 			var chance = effect.get("trigger_chance", 0.0)
 			spell_chances.append({"spell_id": spell_id, "chance": chance})
 			total_chance += chance
@@ -442,26 +416,20 @@ func trigger_attack_spell() -> Dictionary:
 	if spell_chances.is_empty():
 		return {"triggered": false, "is_normal_attack": true}
 	
-	# 权重上限保护：如果总概率超过80%，等比例缩小
 	var scale_factor = 1.0
 	if total_chance > MAX_TOTAL_TRIGGER_CHANCE:
 		scale_factor = MAX_TOTAL_TRIGGER_CHANCE / total_chance
 		total_chance = MAX_TOTAL_TRIGGER_CHANCE
-		# 重新计算每个术法的概率
 		for spell_chance in spell_chances:
 			spell_chance.chance *= scale_factor
 	
-	# 判定是否触发术法（总概率 vs 普攻概率）
-	# 普攻概率 = max(0.2, 1 - total_chance)
 	var normal_attack_chance = max(0.2, 1.0 - total_chance)
 	var roll = randf()
 	
 	if roll < normal_attack_chance:
-		# 触发普攻
 		return {"triggered": false, "is_normal_attack": true}
 	
-	# 触发术法，按比例选择具体哪个术法
-	var effective_roll = (roll - normal_attack_chance) / total_chance  # 归一化到0-1
+	var effective_roll = (roll - normal_attack_chance) / total_chance
 	var cumulative_chance = 0.0
 	
 	for spell_data_item in spell_chances:
@@ -480,7 +448,6 @@ func trigger_attack_spell() -> Dictionary:
 				"is_normal_attack": false
 			}
 	
-	# 兜底：选择第一个
 	var first_spell = spell_chances[0]
 	add_spell_use_count(first_spell.spell_id)
 	return {
@@ -491,7 +458,6 @@ func trigger_attack_spell() -> Dictionary:
 		"is_normal_attack": false
 	}
 
-# 检查术法是否可以升级（用于UI提示）
 func can_upgrade_spell(spell_id: String) -> Dictionary:
 	var result = {"can_upgrade": false, "reason": "", "next_level": 0}
 	
@@ -517,12 +483,10 @@ func can_upgrade_spell(spell_id: String) -> Dictionary:
 	var spirit_cost = level_data.get("spirit_cost", 0)
 	var use_count_required = level_data.get("use_count_required", 0)
 	
-	# 检查使用次数
 	if spell_info.use_count < use_count_required:
 		result.reason = "使用次数不足"
 		return result
 	
-	# 检查已充灵气
 	if spell_info.charged_spirit < spirit_cost:
 		result.reason = "术法灵气不足"
 		return result
@@ -531,7 +495,6 @@ func can_upgrade_spell(spell_id: String) -> Dictionary:
 	result.next_level = next_level
 	return result
 
-# 获取术法配置信息（未获得也可查看）
 func get_spell_config_info(spell_id: String) -> Dictionary:
 	if not spell_data:
 		return {}
@@ -543,14 +506,13 @@ func get_spell_config_info(spell_id: String) -> Dictionary:
 	var result = {
 		"id": spell_id,
 		"name": config.get("name", ""),
-		"type": config.get("type", 0),
-		"type_name": spell_data.get_spell_type_name(config.get("type", 0)),
+		"type": config.get("type", "active"),
+		"type_name": spell_data.get_spell_type_name(config.get("type", "active")),
 		"description": config.get("description", ""),
 		"max_level": config.get("max_level", 3),
 		"levels": {}
 	}
 	
-	# 获取所有等级的配置
 	var levels = config.get("levels", {})
 	for level in levels.keys():
 		var level_data = levels[level]
@@ -563,12 +525,10 @@ func get_spell_config_info(spell_id: String) -> Dictionary:
 	
 	return result
 
-# 存档数据（只存储已获得的术法）
 func get_save_data() -> Dictionary:
 	var saved_spells = {}
 	for spell_id in player_spells.keys():
 		var spell_info = player_spells[spell_id]
-		# 只存储已获得的术法
 		if spell_info.obtained:
 			saved_spells[spell_id] = {
 				"obtained": true,
@@ -582,59 +542,64 @@ func get_save_data() -> Dictionary:
 		"equipped_spells": equipped_spells.duplicate()
 	}
 
-# 加载存档数据
 func apply_save_data(data: Dictionary):
-	# 先初始化所有术法
 	_init_player_spells()
 	
 	if data == null:
 		return
-	
-	if data.has("player_spells"):
-		var loaded_spells = data.player_spells
-		if loaded_spells:
-			for spell_id in loaded_spells.keys():
-				if player_spells.has(spell_id):
-					var spell_info = loaded_spells[spell_id]
-					player_spells[spell_id] = {
-						"obtained": spell_info.get("obtained", false),
-						"level": int(spell_info.get("level", 0)),
-						"use_count": int(spell_info.get("use_count", 0)),
-						"charged_spirit": int(spell_info.get("charged_spirit", 0))
-					}
-	
-	if data.has("equipped_spells"):
-		var loaded_equipped = data.equipped_spells
-		if loaded_equipped:
-			# 处理服务端格式（字符串键）和客户端格式（数字键）
-			if loaded_equipped.has("tuna"):
-				# 服务端格式：{"tuna": null, "active": [], "passive": []}
-				var tuna_spell = loaded_equipped.get("tuna")
-				if tuna_spell and player_spells.has(tuna_spell) and player_spells[tuna_spell].obtained:
-					equipped_spells[spell_data.SpellType.BREATHING] = [tuna_spell]
-				else:
-					equipped_spells[spell_data.SpellType.BREATHING] = []
-				
-				var active_spells = loaded_equipped.get("active", [])
-				equipped_spells[spell_data.SpellType.ACTIVE] = []
-				if active_spells:
-					for spell_id in active_spells:
-						if player_spells.has(spell_id) and player_spells[spell_id].obtained:
-							equipped_spells[spell_data.SpellType.ACTIVE].append(spell_id)
-				
-				var passive_spells = loaded_equipped.get("passive", [])
-				equipped_spells[spell_data.SpellType.PASSIVE] = []
-				if passive_spells:
-					for spell_id in passive_spells:
-						if player_spells.has(spell_id) and player_spells[spell_id].obtained:
-							equipped_spells[spell_data.SpellType.PASSIVE].append(spell_id)
-			else:
-				# 客户端格式：{0: [], 1: [], 2: []}
-				for spell_type in loaded_equipped.keys():
-					var type_value = int(spell_type)
-					var spell_list = loaded_equipped[spell_type]
-					equipped_spells[type_value] = []
-					if spell_list:
-						for spell_id in spell_list:
-							if player_spells.has(spell_id) and player_spells[spell_id].obtained:
-								equipped_spells[type_value].append(spell_id)
+
+	var loaded_spells: Dictionary = {}
+	if data.has("player_spells") and data["player_spells"] is Dictionary:
+		loaded_spells = data["player_spells"]
+	elif data.has("spells") and data["spells"] is Dictionary:
+		loaded_spells = data["spells"]
+
+	if not loaded_spells.is_empty():
+		for raw_spell_id in loaded_spells.keys():
+			var spell_id = str(raw_spell_id)
+			if not player_spells.has(spell_id):
+				continue
+			var spell_info = loaded_spells[raw_spell_id]
+			if not (spell_info is Dictionary):
+				continue
+			var level = int(spell_info.get("level", 0))
+			var obtained = bool(spell_info.get("obtained", level > 0))
+			player_spells[spell_id] = {
+				"obtained": obtained,
+				"level": level,
+				"use_count": int(spell_info.get("use_count", 0)),
+				"charged_spirit": int(spell_info.get("charged_spirit", 0))
+			}
+
+	var loaded_equipped: Dictionary = {}
+	if data.has("equipped_spells") and data["equipped_spells"] is Dictionary:
+		loaded_equipped = data["equipped_spells"]
+
+	equipped_spells["breathing"] = []
+	equipped_spells["active"] = []
+	equipped_spells["opening"] = []
+	equipped_spells["production"] = []
+
+	if loaded_equipped.is_empty():
+		return
+
+	for spell_id in _get_equipped_list_by_keys(loaded_equipped, ["breathing", "production"]):
+		if player_spells.has(spell_id) and player_spells[spell_id].obtained:
+			equipped_spells["breathing"].append(spell_id)
+
+	for spell_id in _get_equipped_list_by_keys(loaded_equipped, ["active"]):
+		if player_spells.has(spell_id) and player_spells[spell_id].obtained:
+			equipped_spells["active"].append(spell_id)
+
+	for spell_id in _get_equipped_list_by_keys(loaded_equipped, ["opening", "passive"]):
+		if player_spells.has(spell_id) and player_spells[spell_id].obtained:
+			equipped_spells["opening"].append(spell_id)
+
+func _get_equipped_list_by_keys(source: Dictionary, keys: Array) -> Array:
+	for key in keys:
+		if source.has(key) and source[key] is Array:
+			var result: Array = []
+			for spell_id in source[key]:
+				result.append(str(spell_id))
+			return result
+	return []

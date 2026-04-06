@@ -1,6 +1,7 @@
 class_name ChunaModule extends Node
 
 # 储纳模块 - 处理物品管理、物品详情等功能
+const ActionLockManager = preload("res://scripts/managers/ActionLockManager.gd")
 
 # 信号
 signal item_selected(item_id: String, index: int)
@@ -17,7 +18,7 @@ var item_data: Node = null
 var spell_system: Node = null
 var spell_data: Node = null
 var alchemy_system: Node = null
-var save_manager: Node = null
+var api: Node = null
 
 # UI节点引用
 var chuna_panel: Control = null
@@ -41,7 +42,10 @@ var current_selected_index: int = -1
 # 信号连接状态标记
 var _signals_connected: bool = false
 
-func initialize(ui: Node, player_node: Node, inv: Node, item_data_node: Node, spell_sys: Node = null, spell_dt: Node = null, alchemy_sys: Node = null):
+const ACTION_COOLDOWN_SECONDS := 0.1
+var _action_lock := ActionLockManager.new()
+
+func initialize(ui: Node, player_node: Node, inv: Node, item_data_node: Node, spell_sys: Node = null, spell_dt: Node = null, alchemy_sys: Node = null, game_api: Node = null):
 	game_ui = ui
 	player = player_node
 	inventory = inv
@@ -49,11 +53,7 @@ func initialize(ui: Node, player_node: Node, inv: Node, item_data_node: Node, sp
 	spell_system = spell_sys
 	spell_data = spell_dt
 	alchemy_system = alchemy_sys
-	
-	# 获取save_manager
-	var game_manager = get_node_or_null("/root/GameManager")
-	if game_manager:
-		save_manager = game_manager.get_save_manager()
+	api = game_api
 	
 	# 检查必需节点
 	_check_required_nodes()
@@ -128,6 +128,9 @@ func show_tab():
 		chuna_panel.visible = true
 	_clear_item_detail_panel()
 	update_inventory_ui()
+	# 初始化时，确保数据是最新的
+	if game_ui and game_ui.has_method("refresh_all_player_data"):
+		game_ui.refresh_all_player_data()
 
 # 隐藏储纳Tab
 func hide_tab():
@@ -261,7 +264,13 @@ func _select_slot(index: int):
 
 # 更新储纳UI
 func update_inventory_ui():
+	print("[ChunaModule] update_inventory_ui 调用")
+	print("[ChunaModule] inventory: ", inventory)
+	print("[ChunaModule] inventory_grid: ", inventory_grid)
+	print("[ChunaModule] item_data: ", item_data)
+	
 	if not inventory or not inventory_grid:
+		print("[ChunaModule] inventory 或 inventory_grid 为空，返回")
 		return
 	
 	# 更新容量显示
@@ -275,7 +284,8 @@ func update_inventory_ui():
 		expand_button.visible = inventory.can_expand() if inventory.has_method("can_expand") else false
 	
 	# 更新格子显示
-	var item_list = inventory.get_item_list()
+	var item_list = inventory.get_item_list() if inventory else []
+	print("[ChunaModule] item_list 数量: ", item_list.size())
 	
 	for child in inventory_grid.get_children():
 		var index = child.get_meta("index", -1)
@@ -284,7 +294,7 @@ func update_inventory_ui():
 			var name_label = child.get_node_or_null("NameLabel")
 			var count_label = child.get_node_or_null("CountLabel")
 			
-			if item.get("empty", true):
+			if item == null or item.get("empty", true):
 				if name_label:
 					name_label.text = ""
 				if count_label:
@@ -294,6 +304,7 @@ func update_inventory_ui():
 				var count = int(item.get("count", 0))
 				var item_info = item_data.get_item_data(item_id) if item_data else {}
 				var item_name = item_info.get("name", "未知")
+				print("[ChunaModule] 物品 ", index, ": id=", item_id, " name=", item_name, " count=", count)
 				var quality = int(item_info.get("quality", 0))
 				
 				if name_label:
@@ -440,6 +451,18 @@ func _clear_item_detail_panel():
 	current_selected_index = -1
 	current_selected_item_id = ""
 
+func _begin_action_lock(action_key: String) -> bool:
+	return _action_lock.try_begin(action_key)
+
+func _end_action_lock(action_key: String):
+	_action_lock.end(action_key, ACTION_COOLDOWN_SECONDS)
+
+func _refresh_after_inventory_action():
+	if game_ui and game_ui.has_method("refresh_all_player_data"):
+		await game_ui.refresh_all_player_data()
+	else:
+		await _refresh_inventory_from_server()
+
 # 按钮处理函数
 func _on_view_button_pressed():
 	if current_selected_item_id.is_empty():
@@ -452,175 +475,42 @@ func _on_view_button_pressed():
 func _on_use_button_pressed():
 	if current_selected_item_id.is_empty() or current_selected_index < 0:
 		return
-
-	var item_info = item_data.get_item_data(current_selected_item_id) if item_data else {}
-	var content = item_info.get("content", {})
-	var effect = item_info.get("effect", {})
-	var item_name = item_info.get("name", "未知")
-
-	# 处理有效果的物品
-	if not effect.is_empty():
-		var effect_type = effect.get("type", "")
-		var effect_amount = int(effect.get("amount", 0))
-		
-		match effect_type:
-			"add_spirit_energy_unlimited":
-				if player:
-					player.add_spirit_energy_unlimited(effect_amount)
-					_add_log("使用" + item_name + "，灵气增加" + str(effect_amount) + "点！")
-				else:
-					_add_log("玩家未初始化，无法使用")
-					return
-			"add_spirit_energy":
-				if player:
-					player.add_spirit_energy(effect_amount)
-					_add_log("使用" + item_name + "，灵气增加" + str(effect_amount) + "点！")
-				else:
-					_add_log("玩家未初始化，无法使用")
-					return
-			"add_health":
-				if player:
-					player.heal(effect_amount)
-					_add_log("使用" + item_name + "，气血值恢复" + str(effect_amount) + "点！")
-				else:
-					_add_log("玩家未初始化，无法使用")
-					return
-			"add_spirit_and_health":
-				if player:
-					var spirit_amount = int(effect.get("spirit_amount", 0))
-					var health_amount = int(effect.get("health_amount", 0))
-					var unlimited = effect.get("unlimited", false)
-					if unlimited:
-						player.add_spirit_energy_unlimited(spirit_amount)
-					else:
-						player.add_spirit(spirit_amount)
-					player.heal(health_amount)
-					_add_log("使用" + item_name + "，灵气增加" + str(spirit_amount) + "点，气血值恢复" + str(health_amount) + "点！")
-				else:
-					_add_log("玩家未初始化，无法使用")
-					return
-			"unlock_spell":
-				if spell_system:
-					var spell_id = effect.get("spell_id", "")
-					var result = spell_system.obtain_spell(spell_id)
-					if result:
-						var spell_name = spell_data.get_spell_name(spell_id) if spell_data else spell_id
-						_add_log("使用" + item_name + "，成功解锁术法")
-						if game_ui and game_ui.has_method("_init_spell_ui"):
-							game_ui._init_spell_ui()
-					else:
-						_add_log("该术法已解锁")
-						return
-				else:
-					_add_log("术法系统未初始化，无法使用")
-					return
-			"unlock_feature":
-				var feature_id = effect.get("feature_id", "")
-				match feature_id:
-					"alchemy":
-						if alchemy_system:
-							if alchemy_system.has_furnace():
-								_add_log("已拥有丹炉")
-								return
-							alchemy_system.equip_furnace(current_selected_item_id)
-							_add_log("使用" + item_name + "，成功解锁炼丹功能")
-							if game_ui and game_ui.has_method("refresh_alchemy_ui"):
-								game_ui.refresh_alchemy_ui()
-						else:
-							_add_log("炼丹系统未初始化，无法使用")
-							return
-					_:
-						_add_log("未知功能：" + feature_id)
-						return
-			"learn_recipe":
-				var recipe_id = effect.get("recipe_id", "")
-				if not recipe_id:
-					# 尝试从物品ID推断丹方ID
-					if current_selected_item_id.begins_with("recipe_"):
-						recipe_id = current_selected_item_id.replace("recipe_", "")
-					else:
-						_add_log("无效的丹方ID")
-						return
-				
-				if not alchemy_system:
-					_add_log("炼丹系统未初始化，无法使用")
-					return
-				
-				# 检查是否已学会
-				if alchemy_system.has_learned_recipe(recipe_id):
-					_add_log("已学会该丹方")
-					return
-				
-				# 学习丹方
-				var result = alchemy_system.learn_recipe(recipe_id)
-				if result:
-					_add_log("使用" + item_name + "，成功学会丹方")
-					# 通知GameUI刷新炼丹房UI
-					if game_ui and game_ui.has_method("refresh_alchemy_ui"):
-						game_ui.refresh_alchemy_ui()
-				else:
-					_add_log("学习丹方失败")
-			_:
-				_add_log("未知效果类型：" + effect_type)
-				return
-		
-		# 保存当前物品ID，因为消耗物品后会被清空
-		var used_item_id = current_selected_item_id
-		
-		# 消耗物品
-		if inventory:
-			inventory.remove_item(current_selected_item_id, 1)
-		item_used.emit(current_selected_item_id)
-		update_inventory_ui()
-		_clear_item_detail_panel()
-		
-		# 根据效果类型保存相应系统
-		var is_important = item_data and item_data.is_important(used_item_id)
-		
-		match effect_type:
-			"unlock_spell":
-				# 使用解锁术法道具后，保存储纳和术法系统
-				_save_partial_systems(["inventory", "spell_system"])
-			"learn_recipe":
-				# 使用解锁丹方道具后，保存储纳和炼丹系统
-				_save_partial_systems(["inventory", "alchemy_system"])
-			_:
-				# 其他重要道具使用后保存所有系统
-				if is_important:
-					_save_all_systems()
+	if not api:
+		_add_log("网络接口未初始化")
+		return
+	if not _begin_action_lock("inventory_use"):
 		return
 
-	# 处理有内容的物品（如新手礼包）
-	if not content.is_empty():
-		# 检查境界限制
-		var requirement = item_info.get("requirement", {})
-		if not requirement.is_empty():
-			var game_manager = get_node_or_null("/root/GameManager")
-			if game_manager and player:
-				var realm_system = game_manager.get_realm_system()
-				if realm_system:
-					if not realm_system.check_realm_requirement(player.realm, player.realm_level, requirement):
-						_add_log("境界不足，无法打开")
-						return
-
-		for content_id in content.keys():
-			var content_count = int(content[content_id])
-			if inventory:
-				inventory.add_item(content_id, content_count)
-				# 物品添加的日志由 _on_item_added 处理
-
-		# 消耗物品
-		if inventory:
-			inventory.remove_item(current_selected_item_id, 1)
-		item_used.emit(current_selected_item_id)
-		update_inventory_ui()
-		_clear_item_detail_panel()
-		
-		# 有内容的物品打开后保存所有系统
-		_save_all_systems()
+	var settle_ok = true
+	if game_ui and game_ui.cultivation_module and game_ui.cultivation_module.has_method("flush_pending_and_then"):
+		settle_ok = await game_ui.cultivation_module.flush_pending_and_then(func(): pass)
+	if not settle_ok:
+		_add_log("修炼增量同步失败，暂无法使用物品")
+		_end_action_lock("inventory_use")
 		return
 
-	_add_log("该物品无法使用")
+	var item_id = current_selected_item_id
+	var result = await api.inventory_use(item_id)
+	if not result.get("success", false):
+		var err_msg = api.network_manager.get_api_error_text_for_ui(result, "使用失败")
+		if not err_msg.is_empty():
+			_add_log(err_msg)
+		_end_action_lock("inventory_use")
+		return
+
+	item_used.emit(item_id)
+	_clear_item_detail_panel()
+	
+	await _refresh_after_inventory_action()
+
+	var effect = result.get("effect", {})
+	var contents = result.get("contents", null)
+	if effect is Dictionary and not effect.is_empty():
+		_add_log("使用成功")
+	if contents is Dictionary and not contents.is_empty():
+		_add_log("打开成功，奖励已入包")
+
+	_end_action_lock("inventory_use")
 
 func _on_discard_button_pressed():
 	if current_selected_item_id.is_empty() or current_selected_index < 0:
@@ -656,79 +546,85 @@ func _on_discard_cancelled():
 
 # 执行丢弃操作
 func _perform_discard():
-	if current_selected_item_id.is_empty():
+	if current_selected_item_id.is_empty() or not api:
+		return
+	if not _begin_action_lock("inventory_discard"):
 		return
 
-	var item_info = item_data.get_item_data(current_selected_item_id) if item_data else {}
-	var item_name = item_info.get("name", "未知")
-	var is_important = item_data and item_data.is_important(current_selected_item_id)
+	var result = await api.inventory_discard(current_selected_item_id, 1)
+	if not result.get("success", false):
+		var err_msg = api.network_manager.get_api_error_text_for_ui(result, "丢弃失败")
+		if not err_msg.is_empty():
+			_add_log(err_msg)
+		_end_action_lock("inventory_discard")
+		return
 
-	# 从背包中移除物品
-	if inventory:
-		inventory.remove_item(current_selected_item_id, 1)
-		item_discarded.emit(current_selected_item_id, 1)
-		_add_log("丢弃物品: " + item_name)
-		update_inventory_ui()
-		_clear_item_detail_panel()
-		
-		# 重要物品丢弃后保存所有系统
-		if is_important:
-			_save_all_systems()
+	item_discarded.emit(current_selected_item_id, 1)
+	_add_log("丢弃成功")
+	_clear_item_detail_panel()
+	
+	await _refresh_after_inventory_action()
 
-func _save_all_systems():
-	if not save_manager:
-		var game_manager = get_node_or_null("/root/GameManager")
-		if game_manager:
-			save_manager = game_manager.get_save_manager()
-
-	if save_manager and save_manager.has_method("save_game"):
-		await save_manager.save_game()
-
-func _save_partial_systems(fields: Array):
-	if not save_manager:
-		var game_manager = get_node_or_null("/root/GameManager")
-		if game_manager:
-			save_manager = game_manager.get_save_manager()
-
-	if save_manager and save_manager.has_method("save_partial"):
-		await save_manager.save_partial(fields)
+	_end_action_lock("inventory_discard")
 
 func _on_expand_button_pressed():
-	if not inventory:
+	if not api:
 		return
-	
-	var current_slots = inventory_grid.get_child_count() if inventory_grid else 0
-	if current_slots >= MAX_SLOTS:
-		_add_log("纳戒储纳已达到上限 (" + str(MAX_SLOTS) + " 格)")
+	if not _begin_action_lock("inventory_expand"):
 		return
+
+	var result = await api.inventory_expand()
+	if not result.get("success", false):
+		var err_msg = api.network_manager.get_api_error_text_for_ui(result, "扩容失败")
+		if not err_msg.is_empty():
+			_add_log(err_msg)
+		_end_action_lock("inventory_expand")
+		return
+
+	_add_log(result.get("message", "扩容成功"))
 	
-	if inventory.has_method("expand_capacity") and inventory.expand_capacity():
-		var new_capacity = min(inventory.get_capacity(), MAX_SLOTS)
-		_add_log("纳戒储纳上限已扩容至 " + str(new_capacity) + " 格")
-		
-		# 添加新的格子而不是重新创建所有格子
-		for i in range(current_slots, new_capacity):
-			var slot = _create_slot(i)
-			inventory_grid.add_child(slot)
-		
-		# 等待布局更新后调整大小
-		await get_tree().process_frame
-		_update_slot_sizes()
-		update_inventory_ui()
-	else:
-		_add_log("背包已达到最大容量")
+	await _refresh_after_inventory_action()
+
+	_end_action_lock("inventory_expand")
 
 func _on_sort_button_pressed():
-	if not inventory:
+	if not api:
 		return
-	
-	if inventory.has_method("sort_by_id"):
-		inventory.sort_by_id()
-		_clear_item_detail_panel()
-		update_inventory_ui()
-		_add_log("纳戒已整理")
+	if not _begin_action_lock("inventory_sort"):
+		return
+
+	var result = await api.inventory_organize()
+	if not result.get("success", false):
+		var err_msg = api.network_manager.get_api_error_text_for_ui(result, "整理失败")
+		if not err_msg.is_empty():
+			_add_log(err_msg)
+		_end_action_lock("inventory_sort")
+		return
+
+	_clear_item_detail_panel()
+	await _refresh_after_inventory_action()
+	_add_log("纳戒已整理")
+	_end_action_lock("inventory_sort")
+
+func _refresh_inventory_from_server():
+	if not api or not inventory:
+		return
+	var list_result = await api.inventory_list()
+	if list_result.get("success", false):
+		var body: Dictionary = list_result
+		if list_result.has("data") and list_result["data"] is Dictionary:
+			body = list_result["data"]
+		if body.has("inventory") and body["inventory"] is Dictionary:
+			inventory.apply_save_data(body.get("inventory", {}))
+			setup_inventory_grid()
+			update_inventory_ui()
+			return
+	var err_msg = api.network_manager.get_api_error_text_for_ui(list_result, "背包同步失败")
+	if not err_msg.is_empty():
+		_add_log(err_msg)
 
 # 辅助函数：添加日志（通过信号）
+
 func _add_log(message: String):
 	log_message.emit(message)
 

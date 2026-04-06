@@ -26,8 +26,8 @@ func test_normal_areas_loaded():
 	assert_gt(areas.size(), 0, "应加载普通区域")
 
 func test_special_areas_loaded():
-	var areas = lianli_area_data.get_special_areas()
-	assert_gt(areas.size(), 0, "应加载特殊区域")
+	var areas = lianli_area_data.get_daily_areas()
+	assert_gt(areas.size(), 0, "应加载每日区域")
 
 #endregion
 
@@ -72,7 +72,7 @@ func test_get_foundation_herb_cave():
 	assert_eq(data.get("description", ""), "神秘的洞穴，由强大的看守者守护", "描述应正确")
 
 func test_foundation_herb_cave_is_special():
-	assert_true(lianli_area_data.is_special_area("foundation_herb_cave"), "破境草洞穴应为特殊区域")
+	assert_true(lianli_area_data.is_special_area("foundation_herb_cave"), "破境草洞穴应为每日区域")
 	assert_false(lianli_area_data.is_normal_area("foundation_herb_cave"), "破境草洞穴不应为普通区域")
 
 func test_foundation_herb_cave_is_single_boss():
@@ -86,11 +86,13 @@ func test_foundation_herb_cave_special_drops():
 	assert_eq(drops.get("spirit_stone", 0), 20, "灵石数量应为20")
 
 func test_foundation_herb_cave_enemies():
-	var enemies = lianli_area_data.get_enemies_list("foundation_herb_cave")
-	assert_eq(enemies.size(), 1, "应有1种敌人")
-	assert_eq(enemies[0].get("template", ""), "herb_guardian", "敌人应为灵草看守者")
-	assert_eq(enemies[0].get("min_level", 0), 10, "最小等级应为10")
-	assert_eq(enemies[0].get("max_level", 0), 10, "最大等级应为10")
+	var enemies_template = lianli_area_data.get_enemies_list("foundation_herb_cave")
+	assert_eq(enemies_template.size(), 1, "应有1组敌人配置")
+	var enemies_list = enemies_template[0].get("enemies", [])
+	assert_eq(enemies_list.size(), 1, "应有1种敌人")
+	assert_eq(enemies_list[0].get("template", ""), "herb_guardian", "敌人应为灵草看守者")
+	assert_eq(enemies_list[0].get("min_level", 0), 10, "最小等级应为10")
+	assert_eq(enemies_list[0].get("max_level", 0), 10, "最大等级应为10")
 
 func test_foundation_herb_cave_not_continuous():
 	var continuous = lianli_area_data.get_default_continuous("foundation_herb_cave")
@@ -106,19 +108,23 @@ func test_get_random_enemy_config_outer():
 	assert_true(config.has("template"), "应有模板字段")
 
 func test_get_enemies_list_outer():
-	var enemies = lianli_area_data.get_enemies_list("qi_refining_outer")
-	assert_eq(enemies.size(), 3, "炼气期外围应有3种敌人")
+	var enemies_template = lianli_area_data.get_enemies_list("qi_refining_outer")
+	assert_eq(enemies_template.size(), 3, "炼气期外围应有3组敌人配置")
 
 func test_get_enemies_list_inner():
-	var enemies = lianli_area_data.get_enemies_list("qi_refining_inner")
-	assert_eq(enemies.size(), 4, "炼气期内围应有4种敌人")
+	var enemies_template = lianli_area_data.get_enemies_list("qi_refining_inner")
+	assert_eq(enemies_template.size(), 4, "炼气期内围应有4组敌人配置")
 
 func test_inner_has_elite():
-	var enemies = lianli_area_data.get_enemies_list("qi_refining_inner")
+	var enemies_template = lianli_area_data.get_enemies_list("qi_refining_inner")
 	var has_elite = false
-	for enemy in enemies:
-		if enemy.get("template", "") == "iron_back_wolf":
-			has_elite = true
+	for enemy_group in enemies_template:
+		var enemies_list = enemy_group.get("enemies", [])
+		for enemy in enemies_list:
+			if enemy.get("template", "") == "iron_back_wolf":
+				has_elite = true
+				break
+		if has_elite:
 			break
 	assert_true(has_elite, "炼气期内围应有铁背狼王")
 
@@ -151,8 +157,8 @@ func test_get_normal_area_ids():
 	assert_gt(ids.size(), 0, "应有普通区域ID")
 
 func test_get_special_area_ids():
-	var ids = lianli_area_data.get_special_area_ids()
-	assert_gt(ids.size(), 0, "应有特殊区域ID")
+	var ids = lianli_area_data.get_daily_area_ids()
+	assert_gt(ids.size(), 0, "应有每日区域ID")
 
 func test_get_all_area_ids():
 	var ids = lianli_area_data.get_all_area_ids()

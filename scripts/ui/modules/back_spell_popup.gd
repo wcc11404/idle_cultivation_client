@@ -4,11 +4,10 @@ class_name SpellDetailPopup extends Panel
 ## 负责显示术法详细信息、升级条件、充灵操作等
 
 # 信号
-signal upgrade_requested
-signal charge_requested
-signal multiplier_changed
-signal close_requested
-signal equip_requested
+signal upgrade_pressed
+signal charge_pressed
+signal multiplier_pressed
+signal close_pressed
 
 # UI节点引用
 var background: ColorRect = null
@@ -18,7 +17,6 @@ var vbox: VBoxContainer = null
 var charge_button: Button = null
 var multiplier_button: Button = null
 var upgrade_button: Button = null
-var equip_button: Button = null
 
 # 常量
 const MULTIPLIER_LABELS = ["x10", "x100", "Max"]
@@ -40,13 +38,13 @@ func _create_background(parent_node: Node):
 	background.name = "SpellPopupBackground"
 	background.visible = false
 	background.z_index = 99
-	background.color = Color(0, 0, 0, 0.5)
+	background.color = Color(0, 0, 0, 0.3)
 	background.layout_mode = 1
-	background.anchors_preset = 15
+	background.anchors_preset = 15  # PRESET_FULL_RECT
 	background.anchor_right = 1.0
 	background.anchor_bottom = 1.0
-	background.grow_horizontal = 2
-	background.grow_vertical = 2
+	background.grow_horizontal = 2  # GROW_DIRECTION_BOTH
+	background.grow_vertical = 2  # GROW_DIRECTION_BOTH
 	background.mouse_filter = Control.MOUSE_FILTER_STOP
 	background.gui_input.connect(_on_background_clicked)
 	
@@ -55,8 +53,9 @@ func _create_background(parent_node: Node):
 
 func _create_popup_content():
 	"""创建弹窗内容"""
+	# 设置布局为居中
 	layout_mode = 1
-	anchors_preset = 8
+	anchors_preset = 8  # PRESET_CENTER
 	anchor_left = 0.5
 	anchor_top = 0.5
 	anchor_right = 0.5
@@ -65,21 +64,21 @@ func _create_popup_content():
 	offset_top = -275.0
 	offset_right = 200.0
 	offset_bottom = 275.0
-	grow_horizontal = 2
-	grow_vertical = 2
+	grow_horizontal = 2  # GROW_DIRECTION_BOTH
+	grow_vertical = 2  # GROW_DIRECTION_BOTH
 	
 	vbox = VBoxContainer.new()
 	vbox.name = "VBoxContainer"
 	vbox.layout_mode = 1
-	vbox.anchors_preset = 15
+	vbox.anchors_preset = 15  # PRESET_FULL_RECT
 	vbox.anchor_right = 1.0
 	vbox.anchor_bottom = 1.0
 	vbox.offset_left = 20.0
 	vbox.offset_top = 20.0
 	vbox.offset_right = -20.0
 	vbox.offset_bottom = -20.0
-	vbox.grow_horizontal = 2
-	vbox.grow_vertical = 2
+	vbox.grow_horizontal = 2  # GROW_DIRECTION_BOTH
+	vbox.grow_vertical = 2  # GROW_DIRECTION_BOTH
 	add_child(vbox)
 	
 	# 标题
@@ -167,13 +166,13 @@ func _create_popup_content():
 	charge_button = Button.new()
 	charge_button.name = "ChargeButton"
 	charge_button.text = "+"
-	charge_button.pressed.connect(func(): charge_requested.emit())
+	charge_button.pressed.connect(func(): charge_pressed.emit())
 	spirit_charge_container.add_child(charge_button)
 	
 	multiplier_button = Button.new()
 	multiplier_button.name = "MultiplierButton"
 	multiplier_button.text = "x10"
-	multiplier_button.pressed.connect(func(): multiplier_changed.emit())
+	multiplier_button.pressed.connect(func(): multiplier_pressed.emit())
 	spirit_charge_container.add_child(multiplier_button)
 	
 	# 占位
@@ -184,27 +183,19 @@ func _create_popup_content():
 	# 按钮容器
 	var button_container = HBoxContainer.new()
 	button_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	button_container.add_theme_constant_override("separation", 10)
 	vbox.add_child(button_container)
-	
-	# 装备按钮
-	equip_button = Button.new()
-	equip_button.name = "EquipButton"
-	equip_button.text = "装备"
-	equip_button.pressed.connect(func(): equip_requested.emit())
-	button_container.add_child(equip_button)
 	
 	# 升级按钮
 	upgrade_button = Button.new()
 	upgrade_button.name = "UpgradeButton"
 	upgrade_button.text = "升级"
-	upgrade_button.pressed.connect(func(): upgrade_requested.emit())
+	upgrade_button.pressed.connect(func(): upgrade_pressed.emit())
 	button_container.add_child(upgrade_button)
 	
 	# 关闭按钮
 	var close_button = Button.new()
 	close_button.text = "关闭"
-	close_button.pressed.connect(func(): close_requested.emit())
+	close_button.pressed.connect(func(): close_pressed.emit())
 	button_container.add_child(close_button)
 
 func show_popup():
@@ -233,19 +224,17 @@ func update_content(spell_info: Dictionary, spell_config: Dictionary,
 	# 更新标题
 	var title_label = vbox.get_node_or_null("TitleLabel")
 	if title_label:
-		title_label.text = spell_config.get("name", "")
+		title_label.text = spell_info.get("name", "")
 	
 	# 更新类型
 	var type_label = vbox.get_node_or_null("TypeLabel")
 	if type_label:
-		var type_str = spell_config.get("type", "active")
-		var type_name = spell_data.get_spell_type_name(type_str) if spell_data else type_str
-		type_label.text = "类型：" + type_name
+		type_label.text = "类型：" + spell_info.get("type_name", "")
 	
 	# 更新等级
 	var level_label = vbox.get_node_or_null("LevelLabel")
 	if level_label:
-		level_label.text = "等级：" + str(spell_info.get("level", 0)) + "/" + str(spell_config.get("max_level", 3))
+		level_label.text = "等级：" + str(spell_info.get("level", 0)) + "/" + str(spell_info.get("max_level", 3))
 	
 	# 获取当前等级数据
 	var current_level = spell_info.get("level", 0)
@@ -260,12 +249,7 @@ func update_content(spell_info: Dictionary, spell_config: Dictionary,
 	_update_effect_value(spell_config, level_data)
 	
 	# 更新升级条件
-	_update_upgrade_conditions(spell_info, spell_config, spell_data, multiplier_index, multipliers)
-	
-	# 更新装备按钮文字
-	if equip_button and spell_system:
-		var is_equipped = spell_system.is_spell_equipped(spell_info.get("id", ""))
-		equip_button.text = "卸载" if is_equipped else "装备"
+	_update_upgrade_conditions(spell_info, spell_data, multiplier_index, multipliers)
 
 func _update_attribute_value(level_data: Dictionary):
 	"""更新属性加成显示"""
@@ -293,7 +277,7 @@ func _update_effect_value(spell_config: Dictionary, level_data: Dictionary):
 	var description = spell_config.get("description", "")
 	effect_value.text = _format_effect_description(description, effect)
 
-func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary, spell_data: Node, 
+func _update_upgrade_conditions(spell_info: Dictionary, spell_data: Node, 
 								multiplier_index: int, multipliers: Array):
 	"""更新升级条件显示"""
 	var max_level_label = vbox.get_node_or_null("MaxLevelLabel")
@@ -301,7 +285,7 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 	var spirit_charge_container = vbox.get_node_or_null("SpiritChargeContainer")
 	
 	var current_level = spell_info.get("level", 0)
-	var max_level = spell_config.get("max_level", 3)
+	var max_level = spell_info.get("max_level", 3)
 	
 	if current_level <= 0:
 		if max_level_label:
@@ -354,10 +338,8 @@ func _set_buttons_enabled(enabled: bool, multiplier_index: int):
 		multiplier_button.text = MULTIPLIER_LABELS[multiplier_index] if multiplier_index < MULTIPLIER_LABELS.size() else "x10"
 	if upgrade_button:
 		upgrade_button.disabled = not enabled
-	if equip_button:
-		equip_button.disabled = false
 
-func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spell_data: Node):
+func update_use_count_only(spell_info: Dictionary, spell_data: Node):
 	"""只更新使用次数（用于实时更新）"""
 	var max_level_label = vbox.get_node_or_null("MaxLevelLabel")
 	var use_count_label = vbox.get_node_or_null("UseCountLabel")
@@ -365,7 +347,7 @@ func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spe
 		return
 	
 	var current_level = spell_info.get("level", 0)
-	var max_level = spell_config.get("max_level", 3)
+	var max_level = spell_info.get("max_level", 3)
 	
 	if current_level <= 0:
 		if max_level_label:
@@ -385,14 +367,11 @@ func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spe
 		use_count_label.text = "使用次数：" + str(spell_info.get("use_count", 0)) + "/" + str(use_count_required)
 	
 	use_count_label.queue_redraw()
-	
-	if current_level > 0 and current_level < max_level:
-		_set_buttons_enabled(true, 0)
 
 func _on_background_clicked(event: InputEvent):
 	"""点击背景关闭弹窗"""
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		close_requested.emit()
+		close_pressed.emit()
 
 func cleanup():
 	"""清理资源"""

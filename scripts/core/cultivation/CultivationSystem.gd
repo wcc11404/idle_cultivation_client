@@ -1,6 +1,6 @@
 class_name CultivationSystem extends Node
 
-const AttributeCalculator = preload("res://scripts/core/AttributeCalculator.gd")
+const AttributeCalculator = preload("res://scripts/calculator/AttributeCalculator.gd")
 
 signal cultivation_progress(current: int, max: int)
 signal cultivation_complete()

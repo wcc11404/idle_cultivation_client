@@ -1,6 +1,6 @@
 class_name LianliSystem extends Node
 
-const AttributeCalculator = preload("res://scripts/core/AttributeCalculator.gd")
+const AttributeCalculator = preload("res://scripts/calculator/AttributeCalculator.gd")
 
 #region ==================== 信号定义 ====================
 
@@ -38,7 +38,6 @@ var current_enemy: Dictionary = {}
 
 var is_in_tower: bool = false
 var current_tower_floor: int = 0
-var endless_tower_data: Node = null
 
 var tower_highest_floor: int = 0
 var daily_dungeon_data: Dictionary = {}
@@ -83,9 +82,6 @@ func set_lianli_area_data(data: Node):
 
 func set_enemy_data(data: Node):
 	enemy_data = data
-
-func set_endless_tower_data(data: Node):
-	endless_tower_data = data
 
 func set_current_area(area_id: String):
 	current_area_id = area_id
@@ -309,7 +305,7 @@ func start_wait_for_next_battle() -> bool:
 		return false
 	
 	if is_in_tower:
-		var max_floor = endless_tower_data.get_max_floor()
+		var max_floor = lianli_area_data.get_tower_max_floor()
 		if current_tower_floor + 1 > max_floor:
 			return false
 	else:
@@ -621,21 +617,21 @@ func _restore_health_after_combat():
 ## 从历史最高层+1开始，或从第1层开始
 ## @return: 是否成功开始挑战
 func start_endless_tower() -> bool:
-	if not endless_tower_data or not enemy_data:
+	if not lianli_area_data or not enemy_data:
 		return false
 	
 	if player and player.health <= 0:
-		var tower_name = endless_tower_data.get_tower_name() if endless_tower_data else "无尽塔"
+		var tower_name = lianli_area_data.get_tower_name()
 		log_message.emit("气血不足，无法进入" + tower_name)
 		return false
 	
 	is_in_tower = true
 	is_in_lianli = true
 	continuous_lianli = false
-	current_area_id = endless_tower_data.get_area_id()
+	current_area_id = lianli_area_data.get_tower_id()
 	
 	var start_floor = 1
-	var max_floor = endless_tower_data.get_max_floor()
+	var max_floor = lianli_area_data.get_tower_max_floor()
 	if player:
 		start_floor = min(tower_highest_floor + 1, max_floor)
 	current_tower_floor = start_floor
@@ -648,10 +644,10 @@ func start_endless_tower() -> bool:
 ## 敌人等级等于当前层数
 ## @return: 是否成功开始战斗
 func _start_tower_battle() -> bool:
-	if not endless_tower_data or not enemy_data:
+	if not lianli_area_data or not enemy_data:
 		return false
 	
-	var template_id = endless_tower_data.get_random_template()
+	var template_id = lianli_area_data.get_tower_random_template()
 	var generated_enemy = enemy_data.generate_enemy(template_id, current_tower_floor)
 	if generated_enemy.is_empty():
 		return false
@@ -678,15 +674,15 @@ func _handle_tower_victory():
 	if current_tower_floor > tower_highest_floor:
 		tower_highest_floor = current_tower_floor
 	
-	if endless_tower_data and endless_tower_data.is_reward_floor(current_tower_floor):
-		var reward = endless_tower_data.get_reward_for_floor(current_tower_floor)
+	if lianli_area_data and lianli_area_data.is_tower_reward_floor(current_tower_floor):
+		var reward = lianli_area_data.get_tower_reward_for_floor(current_tower_floor)
 		for item_id in reward.keys():
 			var amount = int(reward[item_id])
 			lianli_reward.emit(item_id, amount, "tower")
 	
 	log_message.emit("挑战第" + str(current_tower_floor) + "层成功")
 	
-	var max_floor = endless_tower_data.get_max_floor()
+	var max_floor = lianli_area_data.get_tower_max_floor()
 	if current_tower_floor >= max_floor:
 		log_message.emit("恭喜！已通关无尽塔最高层！")
 		is_in_battle = false

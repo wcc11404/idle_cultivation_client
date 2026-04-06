@@ -208,5 +208,4 @@ func apply_save_data(data: Dictionary):
 							"count": int(slot.get("count", 0))
 						}
 					else:
-						# 如果slot不是字典类型，跳过
-						print("Inventory.apply_save_data: Skipping invalid slot data at index " + str(index))
+						pass

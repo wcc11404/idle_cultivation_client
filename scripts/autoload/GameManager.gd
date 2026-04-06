@@ -3,7 +3,6 @@ extends Node
 signal offline_reward_received(rewards: Dictionary)
 signal account_logged_in(account_info: Dictionary)
 
-# 静态变量，防止重复初始化
 static var _systems_initialized: bool = false
 
 var player: Node = null
@@ -17,14 +16,12 @@ var lianli_area_data: Node = null
 var enemy_data: Node = null
 var spell_data: Node = null
 var spell_system: Node = null
-var endless_tower_data: Node = null
 var alchemy_system: Node = null
 var recipe_data: Node = null
 var account_info: Dictionary = {}
 var last_online_time: int = 0
 
 func _ready():
-	# 防止重复初始化（在编辑器中脚本重新加载时）
 	if _systems_initialized:
 		return
 	
@@ -33,19 +30,23 @@ func _ready():
 	create_player()
 
 func init_systems():
+	print("[GameManager] init_systems 开始")
+	
 	item_data = load("res://scripts/core/inventory/ItemData.gd").new()
 	item_data.name = "ItemData"
 	add_child(item_data)
+	print("[GameManager] item_data 创建完成: ", item_data)
 	
 	lianli_area_data = load("res://scripts/core/lianli/LianliAreaData.gd").new()
 	lianli_area_data.name = "LianliAreaData"
 	add_child(lianli_area_data)
+	print("[GameManager] lianli_area_data 创建完成: ", lianli_area_data)
 	
 	enemy_data = load("res://scripts/core/lianli/EnemyData.gd").new()
 	enemy_data.name = "EnemyData"
 	add_child(enemy_data)
 	
-	realm_system = load("res://scripts/core/realm/RealmSystem.gd").new()
+	realm_system = load("res://scripts/core/cultivation/RealmSystem.gd").new()
 	realm_system.name = "RealmSystem"
 	add_child(realm_system)
 	
@@ -53,22 +54,16 @@ func init_systems():
 	inventory.name = "Inventory"
 	add_child(inventory)
 	
-	cultivation_system = load("res://scripts/core/realm/CultivationSystem.gd").new()
+	cultivation_system = load("res://scripts/core/cultivation/CultivationSystem.gd").new()
 	cultivation_system.name = "CultivationSystem"
 	add_child(cultivation_system)
-	
-	endless_tower_data = load("res://scripts/core/lianli/EndlessTowerData.gd").new()
-	endless_tower_data.name = "EndlessTowerData"
-	add_child(endless_tower_data)
 	
 	lianli_system = load("res://scripts/core/lianli/LianliSystem.gd").new()
 	lianli_system.name = "LianliSystem"
 	add_child(lianli_system)
 	lianli_system.set_lianli_area_data(lianli_area_data)
 	lianli_system.set_enemy_data(enemy_data)
-	lianli_system.set_endless_tower_data(endless_tower_data)
 	
-	# 使用 CloudSaveManager 替代 SaveManager
 	cloud_save_manager = load("res://scripts/managers/CloudSaveManager.gd").new()
 	cloud_save_manager.name = "CloudSaveManager"
 	add_child(cloud_save_manager)
@@ -76,14 +71,15 @@ func init_systems():
 	spell_data = load("res://scripts/core/spell/SpellData.gd").new()
 	spell_data.name = "SpellData"
 	add_child(spell_data)
+	print("[GameManager] spell_data 创建完成: ", spell_data)
 	
 	spell_system = load("res://scripts/core/spell/SpellSystem.gd").new()
 	spell_system.name = "SpellSystem"
 	add_child(spell_system)
 	spell_system.set_spell_data(spell_data)
 	spell_system.set_lianli_system(lianli_system)
+	print("[GameManager] spell_system 创建完成: ", spell_system)
 	
-	# 初始化炼丹系统
 	recipe_data = load("res://scripts/core/alchemy/AlchemyRecipeData.gd").new()
 	recipe_data.name = "AlchemyRecipeData"
 	add_child(recipe_data)
@@ -94,9 +90,11 @@ func init_systems():
 	alchemy_system.set_recipe_data(recipe_data)
 	alchemy_system.set_inventory(inventory)
 	alchemy_system.set_spell_system(spell_system)
+	
+	print("[GameManager] init_systems 完成")
 
 func create_player():
-	player = load("res://scripts/core/PlayerData.gd").new()
+	player = load("res://scripts/models/PlayerModel.gd").new()
 	player.name = "Player"
 	add_child(player)
 	
@@ -138,9 +136,6 @@ func get_lianli_area_data():
 func get_enemy_data():
 	return enemy_data
 
-func get_endless_tower_data():
-	return endless_tower_data
-
 func get_alchemy_system():
 	return alchemy_system
 
@@ -162,21 +157,14 @@ func _notification(what):
 
 func _handle_game_exit():
 	# 处理游戏退出逻辑
-	# 直接调用CloudSaveManager的on_game_exit方法，并等待它完成
 	if cloud_save_manager:
 		await cloud_save_manager.on_game_exit()
-	# 等待一小段时间，确保保存操作完成
-	await get_tree().create_timer(1.0).timeout
 	# 退出游戏
 	get_tree().quit()
 
 func save_game() -> bool:
-	if cloud_save_manager:
-		var result = await cloud_save_manager.save_game()
-		return result
-	else:
-		push_error("save_game: cloud_save_manager 为 null!")
-		return false
+	# 客户端瘦身后不再主动调用 /game/save，保留兼容接口。
+	return true
 
 func load_game() -> bool:
 	if cloud_save_manager:

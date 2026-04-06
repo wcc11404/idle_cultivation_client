@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://spellcard001"]
 
 [node name="SpellCard" type="PanelContainer"]
-custom_minimum_size = Vector2(150, 200)
+custom_minimum_size = Vector2(120, 160)
 layout_mode = 3
 anchors_preset = 0
 

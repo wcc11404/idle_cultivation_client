@@ -1,6 +1,6 @@
 extends Node
 
-const GameServerAPI = preload("res://scripts/network/GameServerAPI.gd")
+const GameServerAPI = preload("res://scripts/api/GameServerAPI.gd")
 
 const AUTO_SAVE_INTERVAL = 300  # 5分钟
 const MAX_SAVE_FAILURES = 3
@@ -13,94 +13,31 @@ var is_autosave_running: bool = false
 func _ready():
 	api = GameServerAPI.new()
 	add_child(api)
-	
-	# 开始自动保存
-	start_auto_save()
 
 func start_auto_save():
-	if is_autosave_running:
-		return
-	
-	is_autosave_running = true
-	_auto_save_loop()
+	is_autosave_running = false
 
 func _auto_save_loop():
-	while is_autosave_running:
-		await get_tree().create_timer(AUTO_SAVE_INTERVAL).timeout
-		await save_game()
+	return
 
 func save_game() -> bool:
-	var data = collect_game_data()
-	# 重新加载 token，确保使用最新的
-	api.network_manager.load_token()
-	var result = await api.save_game(data)
-	
-	if result.success:
-		last_save_time = Time.get_unix_time_from_system()
-		save_failure_count = 0
-		return true
-	else:
-		# 检查是否是401错误（Token过期）
-		var is_401 = false
-		if result.has("response_code"):
-			var response_code = result.response_code
-			if response_code is String:
-				is_401 = response_code == "401"
-			elif response_code is int:
-				is_401 = response_code == 401
-		
-		if is_401:
-			# Token过期，直接强制登出
-			_force_logout()
-			return false
-		else:
-			# 其他错误，增加失败计数
-			save_failure_count += 1
-			
-			if save_failure_count >= MAX_SAVE_FAILURES:
-				_force_logout()
-			return false
+	# 客户端瘦身后不再调用 /game/save，保留接口仅为兼容历史调用。
+	last_save_time = Time.get_unix_time_from_system()
+	save_failure_count = 0
+	return true
 
 func save_partial(fields: Array) -> bool:
-	var all_data = collect_game_data()
-	var partial_data = {}
-	
-	for field in fields:
-		if all_data.has(field):
-			partial_data[field] = all_data[field]
-	
-	if partial_data.is_empty():
+	# 客户端瘦身后不再调用 /game/save，保留接口仅为兼容历史调用。
+	if fields.is_empty():
 		return false
-	
-	api.network_manager.load_token()
-	var result = await api.save_game(partial_data)
-	
-	if result.success:
-		last_save_time = Time.get_unix_time_from_system()
-		save_failure_count = 0
-		return true
-	else:
-		var is_401 = false
-		if result.has("response_code"):
-			var response_code = result.response_code
-			if response_code is String:
-				is_401 = response_code == "401"
-			elif response_code is int:
-				is_401 = response_code == 401
-		
-		if is_401:
-			_force_logout()
-			return false
-		else:
-			save_failure_count += 1
-			if save_failure_count >= MAX_SAVE_FAILURES:
-				_force_logout()
-			return false
+	last_save_time = Time.get_unix_time_from_system()
+	save_failure_count = 0
+	return true
 
 func load_game() -> bool:
 	var result = await api.load_game()
-	if result.success:
-		apply_game_data(result.data)
+	if result.get("success", false):
+		apply_game_data(result.get("data", {}))
 		return true
 	return false
 
@@ -171,11 +108,5 @@ func stop_auto_save():
 	is_autosave_running = false
 
 func on_game_exit():
-	# 游戏退出前保存
-	# 由于是协程，这里使用await等待保存完成
-	# 保存时不进行强制登出，因为游戏正在退出
-	var data = collect_game_data()
-	# 重新加载 token，确保使用最新的
-	api.network_manager.load_token()
-	await api.save_game(data)
+	# 客户端瘦身后退出时不再调用 /game/save。
 	stop_auto_save()

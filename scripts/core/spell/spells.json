@@ -1,14 +1,9 @@
 {
-	"equipment_limits": {
-		"MAX_BREATHING_SPELLS": 1,
-		"MAX_ACTIVE_SPELLS": 2,
-		"MAX_PASSIVE_SPELLS": 2
-	},
 	"spells": {
 		"basic_breathing": {
 			"id": "basic_breathing",
 			"name": "基础吐纳",
-			"type": 0,
+			"type": "breathing",
 			"description": "修炼时每秒恢复{heal_percent}最大气血",
 			"max_level": 3,
 			"levels": {
@@ -16,26 +11,26 @@
 					"spirit_cost": 1,
 					"use_count_required": 50,
 					"attribute_bonus": {"spirit_gain": 1.02},
-					"effect": {"type": "passive_heal", "heal_percent": 0.002}
+					"effect": {"effect_type": "passive_heal", "heal_percent": 0.002}
 				},
 				"2": {
 					"spirit_cost": 200,
 					"use_count_required": 200,
 					"attribute_bonus": {"spirit_gain": 1.04},
-					"effect": {"type": "passive_heal", "heal_percent": 0.004}
+					"effect": {"effect_type": "passive_heal", "heal_percent": 0.004}
 				},
 				"3": {
 					"spirit_cost": 500,
 					"use_count_required": 500,
 					"attribute_bonus": {"spirit_gain": 1.06},
-					"effect": {"type": "passive_heal", "heal_percent": 0.006}
+					"effect": {"effect_type": "passive_heal", "heal_percent": 0.006}
 				}
 			}
 		},
 		"basic_boxing_techniques": {
 			"id": "basic_boxing_techniques",
 			"name": "基础拳法",
-			"type": 1,
+			"type": "active",
 			"description": "战斗中{trigger_chance}概率释放，造成{damage_percent}攻击力的伤害",
 			"max_level": 3,
 			"levels": {
@@ -43,26 +38,26 @@
 					"spirit_cost": 50,
 					"use_count_required": 50,
 					"attribute_bonus": {"attack": 1.02},
-					"effect": {"type": "active_damage", "damage_percent": 1.10, "trigger_chance": 0.30}
+					"effect": {"effect_type": "instant_damage", "damage_percent": 1.10, "trigger_chance": 0.30}
 				},
 				"2": {
 					"spirit_cost": 200,
 					"use_count_required": 200,
 					"attribute_bonus": {"attack": 1.04},
-					"effect": {"type": "active_damage", "damage_percent": 1.15, "trigger_chance": 0.30}
+					"effect": {"effect_type": "instant_damage", "damage_percent": 1.15, "trigger_chance": 0.30}
 				},
 				"3": {
 					"spirit_cost": 500,
 					"use_count_required": 500,
 					"attribute_bonus": {"attack": 1.06},
-					"effect": {"type": "active_damage", "damage_percent": 1.20, "trigger_chance": 0.30}
+					"effect": {"effect_type": "instant_damage", "damage_percent": 1.20, "trigger_chance": 0.30}
 				}
 			}
 		},
 		"thunder_strike": {
 			"id": "thunder_strike",
 			"name": "雷击术",
-			"type": 1,
+			"type": "active",
 			"description": "战斗中{trigger_chance}概率释放，造成{damage_percent}攻击力的伤害",
 			"max_level": 3,
 			"levels": {
@@ -70,26 +65,26 @@
 					"spirit_cost": 100,
 					"use_count_required": 100,
 					"attribute_bonus": {"attack": 1.02},
-					"effect": {"type": "active_damage", "damage_percent": 1.30, "trigger_chance": 0.25}
+					"effect": {"effect_type": "instant_damage", "damage_percent": 1.30, "trigger_chance": 0.25}
 				},
 				"2": {
 					"spirit_cost": 300,
 					"use_count_required": 300,
 					"attribute_bonus": {"attack": 1.04},
-					"effect": {"type": "active_damage", "damage_percent": 1.35, "trigger_chance": 0.25}
+					"effect": {"effect_type": "instant_damage", "damage_percent": 1.35, "trigger_chance": 0.25}
 				},
 				"3": {
 					"spirit_cost": 600,
 					"use_count_required": 600,
 					"attribute_bonus": {"attack": 1.06},
-					"effect": {"type": "active_damage", "damage_percent": 1.40, "trigger_chance": 0.25}
+					"effect": {"effect_type": "instant_damage", "damage_percent": 1.40, "trigger_chance": 0.25}
 				}
 			}
 		},
 		"basic_defense": {
 			"id": "basic_defense",
 			"name": "基础防御",
-			"type": 2,
+			"type": "opening",
 			"description": "战斗开始时，防御提升{buff_percent}",
 			"max_level": 3,
 			"levels": {
@@ -97,26 +92,26 @@
 					"spirit_cost": 50,
 					"use_count_required": 50,
 					"attribute_bonus": {"defense": 1.02},
-					"effect": {"type": "start_buff", "buff_type": "defense", "buff_percent": 0.15, "trigger_chance": 1.0, "log_effect": "防御提升15%"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "defense", "buff_percent": 0.15, "trigger_chance": 1.0, "log_effect": "防御提升15%"}
 				},
 				"2": {
 					"spirit_cost": 200,
 					"use_count_required": 200,
 					"attribute_bonus": {"defense": 1.04},
-					"effect": {"type": "start_buff", "buff_type": "defense", "buff_percent": 0.16, "trigger_chance": 1.0, "log_effect": "防御提升16%"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "defense", "buff_percent": 0.16, "trigger_chance": 1.0, "log_effect": "防御提升16%"}
 				},
 				"3": {
 					"spirit_cost": 500,
 					"use_count_required": 500,
 					"attribute_bonus": {"defense": 1.06},
-					"effect": {"type": "start_buff", "buff_type": "defense", "buff_percent": 0.17, "trigger_chance": 1.0, "log_effect": "防御提升17%"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "defense", "buff_percent": 0.17, "trigger_chance": 1.0, "log_effect": "防御提升17%"}
 				}
 			}
 		},
 		"basic_steps": {
 			"id": "basic_steps",
 			"name": "基础步法",
-			"type": 2,
+			"type": "opening",
 			"description": "战斗开始时，速度+{buff_value}",
 			"max_level": 3,
 			"levels": {
@@ -124,26 +119,26 @@
 					"spirit_cost": 50,
 					"use_count_required": 50,
 					"attribute_bonus": {"speed": 0.1},
-					"effect": {"type": "start_buff", "buff_type": "speed", "buff_value": 0.1, "trigger_chance": 1.0, "log_effect": "速度+0.1"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "speed", "buff_value": 0.1, "trigger_chance": 1.0, "log_effect": "速度+0.1"}
 				},
 				"2": {
 					"spirit_cost": 200,
 					"use_count_required": 200,
 					"attribute_bonus": {"speed": 0.2},
-					"effect": {"type": "start_buff", "buff_type": "speed", "buff_value": 0.2, "trigger_chance": 1.0, "log_effect": "速度+0.2"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "speed", "buff_value": 0.2, "trigger_chance": 1.0, "log_effect": "速度+0.2"}
 				},
 				"3": {
 					"spirit_cost": 500,
 					"use_count_required": 500,
 					"attribute_bonus": {"speed": 0.3},
-					"effect": {"type": "start_buff", "buff_type": "speed", "buff_value": 0.3, "trigger_chance": 1.0, "log_effect": "速度+0.3"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "speed", "buff_value": 0.3, "trigger_chance": 1.0, "log_effect": "速度+0.3"}
 				}
 			}
 		},
 		"basic_health": {
 			"id": "basic_health",
 			"name": "基础气血",
-			"type": 2,
+			"type": "opening",
 			"description": "战斗开始时，气血和气血上限值提升{buff_percent}（本局战斗内生效）",
 			"max_level": 3,
 			"levels": {
@@ -151,26 +146,26 @@
 					"spirit_cost": 50,
 					"use_count_required": 50,
 					"attribute_bonus": {"health": 1.02},
-					"effect": {"type": "start_buff", "buff_type": "health", "buff_percent": 0.005, "trigger_chance": 1.0, "log_effect": "气血上限提升0.5%"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "health", "buff_percent": 0.005, "trigger_chance": 1.0, "log_effect": "气血提升0.5%"}
 				},
 				"2": {
 					"spirit_cost": 360,
 					"use_count_required": 200,
 					"attribute_bonus": {"health": 1.04},
-					"effect": {"type": "start_buff", "buff_type": "health", "buff_percent": 0.01, "trigger_chance": 1.0, "log_effect": "气血上限提升1%"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "health", "buff_percent": 0.01, "trigger_chance": 1.0, "log_effect": "气血提升1%"}
 				},
 				"3": {
 					"spirit_cost": 1080,
 					"use_count_required": 500,
 					"attribute_bonus": {"health": 1.06},
-					"effect": {"type": "start_buff", "buff_type": "health", "buff_percent": 0.015, "trigger_chance": 1.0, "log_effect": "气血上限提升1.5%"}
+					"effect": {"effect_type": "undispellable_buff", "buff_type": "health", "buff_percent": 0.015, "trigger_chance": 1.0, "log_effect": "气血提升1.5%"}
 				}
 			}
 		},
 		"herb_gathering": {
 			"id": "herb_gathering",
 			"name": "灵草采集",
-			"type": 3,
+			"type": "production",
 			"description": "采集效率提升{efficiency}倍，稀有灵草概率+{rare_chance}",
 			"max_level": 3,
 			"levels": {
@@ -178,26 +173,26 @@
 					"spirit_cost": 50,
 					"use_count_required": 50,
 					"attribute_bonus": {"max_spirit": 1.02},
-					"effect": {"type": "gathering", "efficiency": 1.1, "rare_chance": 0.05}
+					"effect": {"effect_type": "gathering", "efficiency": 1.1, "rare_chance": 0.05}
 				},
 				"2": {
 					"spirit_cost": 200,
 					"use_count_required": 200,
 					"attribute_bonus": {"max_spirit": 1.04},
-					"effect": {"type": "gathering", "efficiency": 1.2, "rare_chance": 0.08}
+					"effect": {"effect_type": "gathering", "efficiency": 1.2, "rare_chance": 0.08}
 				},
 				"3": {
 					"spirit_cost": 500,
 					"use_count_required": 500,
 					"attribute_bonus": {"max_spirit": 1.06},
-					"effect": {"type": "gathering", "efficiency": 1.3, "rare_chance": 0.12}
+					"effect": {"effect_type": "gathering", "efficiency": 1.3, "rare_chance": 0.12}
 				}
 			}
 		},
 		"alchemy": {
 			"id": "alchemy",
 			"name": "炼丹术",
-			"type": 3,
+			"type": "production",
 			"description": "炼丹专精术法，成功值+{success_bonus}，炼丹速度+{speed_rate}%",
 			"max_level": 3,
 			"levels": {
@@ -205,19 +200,19 @@
 					"spirit_cost": 50,
 					"use_count_required": 10,
 					"attribute_bonus": {"max_spirit": 1.02},
-					"effect": {"type": "alchemy", "success_bonus": 10, "speed_rate": 0.1}
+					"effect": {"effect_type": "alchemy", "success_bonus": 10, "speed_rate": 0.1}
 				},
 				"2": {
 					"spirit_cost": 200,
 					"use_count_required": 30,
 					"attribute_bonus": {"max_spirit": 1.04},
-					"effect": {"type": "alchemy", "success_bonus": 20, "speed_rate": 0.2}
+					"effect": {"effect_type": "alchemy", "success_bonus": 20, "speed_rate": 0.2}
 				},
 				"3": {
 					"spirit_cost": 500,
 					"use_count_required": 60,
 					"attribute_bonus": {"max_spirit": 1.06},
-					"effect": {"type": "alchemy", "success_bonus": 30, "speed_rate": 0.3}
+					"effect": {"effect_type": "alchemy", "success_bonus": 30, "speed_rate": 0.3}
 				}
 			}
 		}
