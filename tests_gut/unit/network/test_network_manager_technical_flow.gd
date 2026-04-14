@@ -103,3 +103,11 @@ func test_network_failure_threshold_forces_logout():
 	await manager.request("GET", "/game/data", {}, {"track_network_failure": true})
 
 	assert_true(manager.force_logout_handled, "连续网络失败达到阈值应触发统一退出处理")
+
+func test_technical_error_signal_is_throttled_for_ui():
+	manager._last_technical_error_ui_at = -999999.0
+	manager._emit_technical_error_for_ui()
+	var first_emit_at = manager._last_technical_error_ui_at
+	assert_gt(first_emit_at, -999999.0, "首次触发应刷新节流时间戳")
+	manager._emit_technical_error_for_ui()
+	assert_eq(manager._last_technical_error_ui_at, first_emit_at, "节流窗口内再次触发不应刷新时间戳")

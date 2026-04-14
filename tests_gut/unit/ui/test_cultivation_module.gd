@@ -105,3 +105,21 @@ func test_cultivation_time_invalid_log_only_once_per_invalid_streak():
 		if str(msg).contains("修炼同步异常，请稍后重试"):
 			hit_count += 1
 	assert_eq(hit_count, 1, "同一轮连续非法上报仅提示一次")
+
+func test_cultivation_invalid_report_waits_for_next_window_without_immediate_retry():
+	var module = harness.game_ui.cultivation_module
+	var start_result = await harness.client.cultivation_start()
+	assert_true(start_result.get("success", false), "开始修炼应成功")
+	harness.get_player().cultivation_active = true
+
+	harness.client.clear_call_counts()
+	module._pending_count = 5
+	var first_flush_ok = await module._flush_pending_report()
+	assert_false(first_flush_ok, "立即上报应触发时间校验失败")
+	assert_eq(harness.client.get_call_count("cultivation_report"), 1, "失败后应只有本次上报请求")
+	assert_true(module._pending_count >= 5, "失败后 pending 不应被清空")
+
+	# 在下一次 5 秒窗口到达前，process 不应立即再次上报。
+	await module._process(0.1)
+	await get_tree().process_frame
+	assert_eq(harness.client.get_call_count("cultivation_report"), 1, "失败后应等待下一个上报窗口，不做立即重试")

@@ -11,9 +11,14 @@ func _ready():
 		network_manager = NetworkManager.new()
 		add_child(network_manager)
 
-func _critical_options(retry_count: int = 0, show_retry_toast: bool = false) -> Dictionary:
+func _critical_options(
+	retry_count: int = 0,
+	show_retry_toast: bool = false,
+	retry_delay_seconds: float = 0.0
+) -> Dictionary:
 	return {
 		"retry_count": retry_count,
+		"retry_delay_seconds": retry_delay_seconds,
 		"track_network_failure": true,
 		"show_retry_toast": show_retry_toast
 	}
@@ -133,7 +138,7 @@ func alchemy_report(recipe_id: String, count: int) -> Dictionary:
 	return await network_manager.request("POST", "/game/alchemy/report", {
 		"recipe_id": recipe_id,
 		"count": count
-	}, _critical_options(1, true))
+	}, _critical_options(1, true, 1.0))
 
 func alchemy_stop() -> Dictionary:
 	return await network_manager.request("POST", "/game/alchemy/stop", {}, _critical_options())
@@ -152,7 +157,7 @@ func lianli_finish(speed: float, index: int = -1) -> Dictionary:
 	var body := {"speed": speed}
 	if index >= 0:
 		body["index"] = index
-	return await network_manager.request("POST", "/game/lianli/finish", body, _critical_options(1, true))
+	return await network_manager.request("POST", "/game/lianli/finish", body, _critical_options(1, true, 1.0))
 
 func lianli_foundation_herb_cave() -> Dictionary:
 	return await network_manager.request("GET", "/game/dungeon/foundation_herb_cave", {}, _critical_options())

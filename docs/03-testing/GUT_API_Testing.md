@@ -39,9 +39,18 @@ export GODOT_TEST_HOME="$(pwd)/.godot_test_home"
 ## 当前覆盖重点
 
 - 修炼与突破
+  - 连续非法上报仅提示一次
+  - 非法后等待下一次 5 秒窗口再合并上报（不立即重试）
 - 储纳与道具使用
+  - 重要物品丢弃确认弹窗（确认/取消）
 - 术法操作与战斗锁定
 - 炼丹开炉/上报/停火
+  - report 失败后的预扣回滚
 - 历练模拟/结算/状态收敛
+  - 连战等待态推进
 - 设置（改昵称、排行榜、登出）
 - 跨模块 smoke
+- 网络层技术错误链
+  - `AUTH_TOKEN_INVALID` / `AUTH_KICKED_OUT` 统一处理
+  - 技术错误 UI 提示节流
+  - `alchemy_report` / `lianli_finish` 单次延迟重试策略

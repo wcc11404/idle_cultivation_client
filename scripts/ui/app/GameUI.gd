@@ -197,6 +197,8 @@ var active_mode: String = "none"
 var allow_background_server_refresh: bool = true
 var _test_shutdown_requested: bool = false
 var _pending_refresh_all_player_data_count: int = 0
+var _network_ui_last_log_at: float = 0.0
+const NETWORK_UI_LOG_THROTTLE_SECONDS := 2.0
 
 func _ready():
 	# 安全获取可选节点
@@ -207,6 +209,7 @@ func _ready():
 	add_child(api)
 	
 	await get_tree().process_frame
+	_bind_network_error_bridge()
 	
 	# 先初始化所有模块
 	setup_log_manager()
@@ -487,7 +490,8 @@ func setup_neishi_module():
 	var game_manager = get_node("/root/GameManager")
 	cultivation_system = game_manager.get_cultivation_system() if game_manager else null
 	lianli_system = game_manager.get_lianli_system() if game_manager else null
-	cultivation_module.initialize(self, player, cultivation_system, lianli_system, item_data_ref, alchemy_module, api, spell_system, get_node_or_null("/root/GameManager").get_realm_system() if get_node_or_null("/root/GameManager") else null)
+	var realm_system = game_manager.get_realm_system() if game_manager else null
+	cultivation_module.initialize(self, player, cultivation_system, lianli_system, item_data_ref, alchemy_module, api, spell_system, realm_system)
 	
 	# 连接信号
 	cultivation_module.log_message.connect(_on_module_log)
@@ -518,6 +522,21 @@ func _on_module_log(message: String):
 	"""统一处理各模块的日志消息"""
 	if log_manager:
 		log_manager.add_system_log(message)
+
+func _bind_network_error_bridge():
+	var net = get_node_or_null("/root/GlobalNetworkManager")
+	if net and net.has_signal("technical_error_for_ui"):
+		if not net.technical_error_for_ui.is_connected(_on_network_technical_error_for_ui):
+			net.technical_error_for_ui.connect(_on_network_technical_error_for_ui)
+
+func _on_network_technical_error_for_ui(_message: String):
+	# 统一口子：当前写入富文本日志，后续可在这里切换为弹窗。
+	var now_sec = Time.get_unix_time_from_system()
+	if now_sec - _network_ui_last_log_at < NETWORK_UI_LOG_THROTTLE_SECONDS:
+		return
+	_network_ui_last_log_at = now_sec
+	if log_manager:
+		log_manager.add_system_log("网络错误，请稍后再重试")
 
 func _on_alchemy_log(message: String):
 	"""处理炼丹模块的日志消息"""
@@ -667,8 +686,7 @@ func set_inventory(inventory_node: Node):
 	inventory = inventory_node
 	if chuna_module:
 		chuna_module.inventory = inventory
-		if chuna_module.has_method("update_inventory_ui"):
-			chuna_module.update_inventory_ui()
+		chuna_module.update_inventory_ui()
 	if cultivation_module:
 		cultivation_module.inventory = inventory
 	if lianli_module:
@@ -683,7 +701,7 @@ func refresh_all_player_data():
 	"""
 	_pending_refresh_all_player_data_count += 1
 	# 1. 先上报修炼进度（乐观更新的数据）
-	if cultivation_module and cultivation_module.has_method("_flush_pending_report"):
+	if cultivation_module:
 		await cultivation_module._flush_pending_report()
 	
 	# 2. 从服务器加载全量数据
@@ -1061,7 +1079,7 @@ func begin_test_shutdown() -> void:
 
 func has_pending_test_tasks() -> bool:
 	var alchemy_pending := false
-	if alchemy_module and is_instance_valid(alchemy_module) and alchemy_module.has_method("has_pending_test_tasks"):
+	if alchemy_module and is_instance_valid(alchemy_module):
 		alchemy_pending = bool(alchemy_module.has_pending_test_tasks())
 	return _pending_refresh_all_player_data_count > 0 or alchemy_pending
 

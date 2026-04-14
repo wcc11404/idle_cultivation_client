@@ -5,9 +5,13 @@ class_name NetworkManager
 const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
 
 const NETWORK_FAILURE_LOGOUT_THRESHOLD := 3
+const TECHNICAL_ERROR_UI_THROTTLE_SECONDS := 2.0
 
 var current_token: String = ""
 var consecutive_network_failures: int = 0
+var _last_technical_error_ui_at: float = 0.0
+
+signal technical_error_for_ui(message: String)
 
 func _ready():
 	load_token()
@@ -34,6 +38,7 @@ func clear_token():
 
 func request(method: String, endpoint: String, body: Dictionary = {}, options: Dictionary = {}) -> Dictionary:
 	var retry_count: int = int(options.get("retry_count", 0))
+	var retry_delay_seconds: float = float(options.get("retry_delay_seconds", 0.0))
 	var track_failure: bool = bool(options.get("track_network_failure", false))
 	var show_retry_toast: bool = bool(options.get("show_retry_toast", false))
 	var attempts: int = retry_count + 1
@@ -57,10 +62,13 @@ func request(method: String, endpoint: String, body: Dictionary = {}, options: D
 		if can_retry:
 			if show_retry_toast:
 				show_toast("请求失败，正在重试...")
+			if retry_delay_seconds > 0.0:
+				await get_tree().create_timer(retry_delay_seconds).timeout
 			continue
 
 		if track_failure and is_technical_error(result):
 			_track_network_failure_and_maybe_logout()
+			_emit_technical_error_for_ui()
 
 		var error_code := str(result.get("error_code", ""))
 		if error_code == "AUTH_KICKED_OUT":
@@ -245,6 +253,13 @@ func _handle_invalid_token():
 func _force_logout_due_network():
 	clear_token()
 	get_tree().change_scene_to_file("res://scenes/app/Login.tscn")
+
+func _emit_technical_error_for_ui() -> void:
+	var now_sec = Time.get_unix_time_from_system()
+	if now_sec - _last_technical_error_ui_at < TECHNICAL_ERROR_UI_THROTTLE_SECONDS:
+		return
+	_last_technical_error_ui_at = now_sec
+	technical_error_for_ui.emit("网络错误，请稍后再重试")
 
 func show_toast(message: String):
 	print("[Toast] " + message)

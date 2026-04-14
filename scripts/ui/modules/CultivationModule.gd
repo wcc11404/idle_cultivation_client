@@ -39,9 +39,11 @@ var cultivation_figure_particles: TextureRect = null
 var _accumulated_seconds: float = 0.0
 var _pending_count: int = 0
 var _flush_in_flight: bool = false
-var _report_failure_count: int = 0
 var _optimistic_health_regen_accumulator: float = 0.0
 var _time_invalid_prompted_in_streak: bool = false
+var _next_auto_flush_at: float = 0.0
+
+const REPORT_INTERVAL_SECONDS: float = 5.0
 
 const ACTION_COOLDOWN_SECONDS := 0.1
 var _action_lock := ActionLockManager.new()
@@ -74,7 +76,8 @@ func _process(delta: float):
 		_accumulated_seconds -= 1.0
 		_optimistic_tick_once()
 
-	if _pending_count >= 5 and not _flush_in_flight:
+	var now_sec = Time.get_unix_time_from_system()
+	if _pending_count >= 5 and not _flush_in_flight and now_sec >= _next_auto_flush_at:
 		call_deferred("_auto_flush_report")
 
 func _optimistic_tick_once():
@@ -358,7 +361,7 @@ func _get_local_breakthrough_block_message() -> String:
 	return _build_breakthrough_preview_text(preview)
 
 func _auto_flush_report():
-	await _flush_pending_report(5)
+	await _flush_pending_report()
 
 func _flush_pending_report(max_batch: int = -1) -> bool:
 	if _flush_in_flight:
@@ -375,8 +378,8 @@ func _flush_pending_report(max_batch: int = -1) -> bool:
 
 	if result.get("success", false):
 		_pending_count = maxi(0, _pending_count - report_count)
-		_report_failure_count = 0
 		_time_invalid_prompted_in_streak = false
+		_next_auto_flush_at = Time.get_unix_time_from_system() + REPORT_INTERVAL_SECONDS
 		if _pending_count == 0:
 			# 服务端按单次上报批次独立结算回血取整，当前批次结算完成后，
 			# 下一批乐观回血不能继续沿用上一批的小数尾数。
@@ -384,7 +387,7 @@ func _flush_pending_report(max_batch: int = -1) -> bool:
 		_apply_report_result(result, report_count)
 		return true
 
-	_report_failure_count += 1
+	_next_auto_flush_at = Time.get_unix_time_from_system() + REPORT_INTERVAL_SECONDS
 	var reason_code = str(result.get("reason_code", ""))
 	if reason_code == "CULTIVATION_REPORT_TIME_INVALID":
 		if not _time_invalid_prompted_in_streak:
@@ -464,8 +467,8 @@ func on_cultivate_button_pressed():
 		player.cultivation_active = true
 		_pending_count = 0
 		_accumulated_seconds = 0.0
-		_report_failure_count = 0
 		_time_invalid_prompted_in_streak = false
+		_next_auto_flush_at = Time.get_unix_time_from_system() + REPORT_INTERVAL_SECONDS
 		_optimistic_health_regen_accumulator = 0.0
 		if game_ui and game_ui.has_method("set_active_mode"):
 			game_ui.set_active_mode("cultivation")
@@ -495,6 +498,7 @@ func _stop_cultivation_internal(by_failure: bool):
 		_accumulated_seconds = 0.0
 		_optimistic_health_regen_accumulator = 0.0
 		_time_invalid_prompted_in_streak = false
+		_next_auto_flush_at = 0.0
 		if game_ui and game_ui.has_method("clear_active_mode"):
 			game_ui.clear_active_mode("cultivation")
 		if cultivate_button:
