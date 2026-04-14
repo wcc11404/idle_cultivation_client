@@ -40,7 +40,6 @@ var _accumulated_seconds: float = 0.0
 var _pending_count: int = 0
 var _flush_in_flight: bool = false
 var _optimistic_health_regen_accumulator: float = 0.0
-var _time_invalid_prompted_in_streak: bool = false
 var _next_auto_flush_at: float = 0.0
 
 const REPORT_INTERVAL_SECONDS: float = 5.0
@@ -378,7 +377,6 @@ func _flush_pending_report(max_batch: int = -1) -> bool:
 
 	if result.get("success", false):
 		_pending_count = maxi(0, _pending_count - report_count)
-		_time_invalid_prompted_in_streak = false
 		_next_auto_flush_at = Time.get_unix_time_from_system() + REPORT_INTERVAL_SECONDS
 		if _pending_count == 0:
 			# 服务端按单次上报批次独立结算回血取整，当前批次结算完成后，
@@ -388,17 +386,9 @@ func _flush_pending_report(max_batch: int = -1) -> bool:
 		return true
 
 	_next_auto_flush_at = Time.get_unix_time_from_system() + REPORT_INTERVAL_SECONDS
-	var reason_code = str(result.get("reason_code", ""))
-	if reason_code == "CULTIVATION_REPORT_TIME_INVALID":
-		if not _time_invalid_prompted_in_streak:
-			var invalid_msg = _resolve_cultivation_result_message(result, "修炼同步失败")
-			if not invalid_msg.is_empty():
-				log_message.emit(invalid_msg)
-			_time_invalid_prompted_in_streak = true
-	else:
-		var err_msg = _resolve_cultivation_result_message(result, "修炼同步失败")
-		if not err_msg.is_empty():
-			log_message.emit(err_msg)
+	var err_msg = _resolve_cultivation_result_message(result, "修炼同步失败")
+	if not err_msg.is_empty():
+		log_message.emit(err_msg)
 	return false
 
 func _apply_report_result(result: Dictionary, _report_count: int):
@@ -467,7 +457,6 @@ func on_cultivate_button_pressed():
 		player.cultivation_active = true
 		_pending_count = 0
 		_accumulated_seconds = 0.0
-		_time_invalid_prompted_in_streak = false
 		_next_auto_flush_at = Time.get_unix_time_from_system() + REPORT_INTERVAL_SECONDS
 		_optimistic_health_regen_accumulator = 0.0
 		if game_ui and game_ui.has_method("set_active_mode"):
@@ -497,7 +486,6 @@ func _stop_cultivation_internal(by_failure: bool):
 		_pending_count = 0
 		_accumulated_seconds = 0.0
 		_optimistic_health_regen_accumulator = 0.0
-		_time_invalid_prompted_in_streak = false
 		_next_auto_flush_at = 0.0
 		if game_ui and game_ui.has_method("clear_active_mode"):
 			game_ui.clear_active_mode("cultivation")

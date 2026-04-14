@@ -85,7 +85,7 @@ func test_cultivation_respects_mode_lock_message():
 	var enter_check = harness.game_ui.can_enter_mode("cultivation")
 	assert_eq(enter_check.get("message", ""), "请先停止炼丹", "修炼应遵循主界面模式互斥提示")
 
-func test_cultivation_time_invalid_log_only_once_per_invalid_streak():
+func test_cultivation_time_invalid_logs_once_per_invalid_report():
 	var module = harness.game_ui.cultivation_module
 	var start_result = await harness.client.cultivation_start()
 	assert_true(start_result.get("success", false), "开始修炼应成功")
@@ -104,7 +104,7 @@ func test_cultivation_time_invalid_log_only_once_per_invalid_streak():
 	for msg in harness.get_log_messages():
 		if str(msg).contains("修炼同步异常，请稍后重试"):
 			hit_count += 1
-	assert_eq(hit_count, 1, "同一轮连续非法上报仅提示一次")
+	assert_eq(hit_count, 2, "每次非法上报应各提示一次")
 
 func test_cultivation_invalid_report_waits_for_next_window_without_immediate_retry():
 	var module = harness.game_ui.cultivation_module

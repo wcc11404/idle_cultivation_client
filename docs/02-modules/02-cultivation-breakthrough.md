@@ -9,7 +9,6 @@
 
 - 计时与上报：`_accumulated_seconds`、`_pending_count`、`_flush_in_flight`
 - 乐观回血累积：`_optimistic_health_regen_accumulator`
-- 非法上报提示抑制：`_time_invalid_prompted_in_streak`
 - 下次自动上报窗口：`_next_auto_flush_at`
 - 玩家状态：`player.is_cultivating`
 
@@ -41,7 +40,7 @@
 1. 若存在 pending 且未在 flush 中，发起 report。
 2. 成功：扣除 pending，并把下个自动上报窗口设为 5 秒后。
 3. 失败：保留 pending，不做立即重试，等待下一次 5 秒窗口再合并上报。
-4. `CULTIVATION_REPORT_TIME_INVALID` 在同一连续失败段只提示一次“修炼同步异常，请稍后重试”。
+4. `CULTIVATION_REPORT_TIME_INVALID` 按“每次非法上报返回一次提示”输出“修炼同步异常，请稍后重试”。
 5. 不直接把技术细节透出给玩家。
 
 ### 4) 点击停止修炼

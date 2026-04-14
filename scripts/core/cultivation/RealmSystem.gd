@@ -62,14 +62,10 @@ func get_spirit_gain_speed(realm_name: String) -> float:
 	var realm_info = get_realm_info(realm_name)
 	return realm_info.get("spirit_gain_speed", 1.0)
 
-func get_breakthrough_materials(realm_name: String, current_level: int, is_realm_breakthrough: bool = false) -> Dictionary:
-	if is_realm_breakthrough:
-		var realm_materials = BREAKTHROUGH_MATERIALS.get("realm_breakthrough", {}).get(realm_name, {})
-		return realm_materials
-	else:
-		var level_materials = BREAKTHROUGH_MATERIALS.get("level_breakthrough", {}).get(realm_name, {})
-		var level_key = str(current_level)
-		return level_materials.get(level_key, {})
+func get_breakthrough_materials(realm_name: String, current_level: int, _is_realm_breakthrough: bool = false) -> Dictionary:
+	var realm_materials = BREAKTHROUGH_MATERIALS.get(realm_name, {})
+	var level_key = str(current_level)
+	return realm_materials.get(level_key, {})
 
 func can_breakthrough(realm_name: String, current_level: int, spirit_stone: int, spirit_energy: int, inventory_items: Dictionary = {}) -> Dictionary:
 	var realm_info = get_realm_info(realm_name)

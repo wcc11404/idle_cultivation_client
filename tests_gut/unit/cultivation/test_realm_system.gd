@@ -59,12 +59,7 @@ func _setup_mock_data():
 		}
 	}
 	realm_system.BREAKTHROUGH_MATERIALS = {
-		"level_breakthrough": {
-			"炼气期": {"5": {"herb": 5}, "10": {"rare_herb": 10}}
-		},
-		"realm_breakthrough": {
-			"炼气期": {"foundation_pill": 1}
-		}
+		"炼气期": {"5": {"herb": 5}, "10": {"foundation_pill": 1}}
 	}
 
 #region 初始化测试
