@@ -60,3 +60,38 @@ export GODOT_TEST_HOME="$(pwd)/.godot_test_home"
   - `AUTH_TOKEN_INVALID` / `AUTH_KICKED_OUT` 统一处理
   - 技术错误 UI 提示节流
   - `alchemy_report` / `lianli_finish` 单次延迟重试策略
+
+## 当前未自动化覆盖的 UI 风险
+
+以下风险目前仍主要依赖人工验收：
+
+- 长屏 / 异形屏下的主界面构图稳定性
+- 顶部刘海 / 灵动岛 / Home Indicator 安全区遮挡
+- 弹窗在安全区内的最终居中表现
+- 字体、图标、按钮模板在不同页面的最终视觉一致性
+
+这些内容已补充到：
+
+- [长屏 / 异形屏人工验收与预览工具说明](./UI_Resolution_Manual_Checklist.md)
+- [UI 自动化测试规划建议](./UI_Automation_Roadmap.md)
+
+## 当前人工 UI 验收建议
+
+每次影响布局、字体、按钮模板、安全区、弹窗尺寸时，建议至少人工抽查：
+
+1. `1080×1920`
+2. `1080×2400`
+3. `1125×2436`
+
+调试入口：
+
+- `res://scenes/debug/ResolutionPreview.tscn`
+
+## 后续 UI 自动化方向
+
+建议后续补一层“结构型 UI smoke”，优先检查：
+
+- 关键节点存在与可见
+- 关键节点是否落在安全区 / 可视区内
+- 弹窗是否居中且未越界
+- 多分辨率下主界面、设置、术法弹窗、账号弹窗是否稳定

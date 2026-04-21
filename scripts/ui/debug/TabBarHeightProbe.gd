@@ -8,12 +8,12 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	var bottom_tab_bar: HBoxContainer = main_instance.get_node("VBoxContainer/TabBar")
-	var neishi_tab_bar: HBoxContainer = main_instance.get_node("VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar")
-	var top_bar: Control = main_instance.get_node("VBoxContainer/TopBar")
-	var top_bar_content: HBoxContainer = main_instance.get_node("VBoxContainer/TopBar/TopBarContent")
-	var status_header_row: HBoxContainer = main_instance.get_node("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsHeaderRow")
-	var breakthrough_header_row: HBoxContainer = main_instance.get_node("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughHeaderRow")
+	var bottom_tab_bar: HBoxContainer = main_instance.get_node("ContentFrame/VBoxContainer/TabBar")
+	var neishi_tab_bar: HBoxContainer = main_instance.get_node("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar")
+	var top_bar: Control = main_instance.get_node("ContentFrame/VBoxContainer/TopBar")
+	var top_bar_content: HBoxContainer = main_instance.get_node("ContentFrame/VBoxContainer/TopBar/TopBarContent")
+	var status_header_row: HBoxContainer = main_instance.get_node("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsHeaderRow")
+	var breakthrough_header_row: HBoxContainer = main_instance.get_node("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughHeaderRow")
 	print("[TabProbe] bottom_tab_bar size=", bottom_tab_bar.size, " custom_min=", bottom_tab_bar.custom_minimum_size)
 	print("[TabProbe] neishi_tab_bar size=", neishi_tab_bar.size, " custom_min=", neishi_tab_bar.custom_minimum_size)
 	print("[TabProbe] top_bar size=", top_bar.size, " custom_min=", top_bar.custom_minimum_size, " content_offsets=(", top_bar_content.offset_top, ",", top_bar_content.offset_bottom, ")")

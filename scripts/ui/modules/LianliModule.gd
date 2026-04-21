@@ -212,7 +212,7 @@ func _process_battle_event(event: Dictionary, duration: float) -> void:
 			_simulated_player_max_health = float(info.get("self_max_health_after", _simulated_player_max_health))
 			player_health_bar_lianli.max_value = _simulated_player_max_health
 			if player_health_value_lianli:
-				player_health_value_lianli.text = AttributeCalculator.format_default(max(0.0, enemy_health_after)) + "/" + AttributeCalculator.format_default(_simulated_player_max_health)
+				player_health_value_lianli.text = _format_health_pair(max(0.0, enemy_health_after), _simulated_player_max_health)
 			_animate_health_bar(player_health_bar_lianli, player_health_value_lianli, max(0.0, enemy_health_after), duration, false)
 		
 		_update_spell_proficiency(spell_id)
@@ -256,7 +256,7 @@ func _generate_battle_log_message(event: Dictionary) -> String:
 		return actor_name + "使用" + spell_name + "，" + log_effect
 	elif effect_type == "instant_damage":
 		var damage = info.get("damage", 0.0)
-		var damage_str = UIUtils.format_battle_number(damage)
+		var damage_str = UIUtils.format_display_number(float(damage))
 		return actor_name + "使用" + spell_name + "对" + target_name + "造成" + damage_str + "点伤害"
 	
 	return ""
@@ -279,7 +279,7 @@ func _animate_health_bar(bar: ProgressBar, value_label: Label, target_health: fl
 
 	var clamped_target = clamp(target_health, 0.0, bar.max_value)
 	if value_label:
-		value_label.text = AttributeCalculator.format_default(clamped_target) + "/" + AttributeCalculator.format_default(bar.max_value)
+		value_label.text = _format_health_pair(clamped_target, bar.max_value)
 
 	if is_enemy:
 		if _enemy_hp_tween:
@@ -319,7 +319,7 @@ func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 		enemy_health_bar.max_value = enemy_max_hp
 		enemy_health_bar.value = enemy_max_hp
 	if enemy_health_value and enemy_health_bar:
-		enemy_health_value.text = AttributeCalculator.format_default(enemy_health_bar.value) + "/" + AttributeCalculator.format_default(enemy_health_bar.max_value)
+		enemy_health_value.text = _format_health_pair(enemy_health_bar.value, enemy_health_bar.max_value)
 
 	if player and player_health_bar_lianli:
 		var player_max_hp = player.get_combat_max_health()
@@ -327,7 +327,7 @@ func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 		player_health_bar_lianli.max_value = player_max_hp
 		player_health_bar_lianli.value = player.health
 	if player_health_value_lianli and player_health_bar_lianli:
-		player_health_value_lianli.text = AttributeCalculator.format_default(player_health_bar_lianli.value) + "/" + AttributeCalculator.format_default(player_health_bar_lianli.max_value)
+		player_health_value_lianli.text = _format_health_pair(player_health_bar_lianli.value, player_health_bar_lianli.max_value)
 
 	if lianli_status_label:
 		lianli_status_label.text = "战斗中..."
@@ -339,6 +339,12 @@ func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 	_set_continuous_default()
 	_update_button_container()
 	_is_timeline_running = true
+
+func _format_health_pair(current: float, maximum: float) -> String:
+	return "%s / %s" % [
+		UIUtils.format_display_number_integer(current),
+		UIUtils.format_display_number_integer(maximum)
+	]
 
 func _finish_current_battle(full_settle: bool):
 	if not api:
@@ -683,7 +689,7 @@ func _format_special_drop_list(special_drops: Dictionary) -> String:
 		if amount <= 0:
 			continue
 		drops_text.append(_get_item_name(item_id) + " x" + UIUtils.format_display_number(float(amount)))
-	return "，".join(drops_text)
+	return "、".join(drops_text)
 
 func _format_drop_table(drops: Dictionary) -> String:
 	var parts: Array[String] = []
@@ -699,7 +705,7 @@ func _format_drop_table(drops: Dictionary) -> String:
 		if chance < 0.9999:
 			chance_text = "（" + str(int(round(chance * 100.0))) + "%）"
 		parts.append(_get_item_name(item_id) + " x" + amount_text + chance_text)
-	return "，".join(parts)
+	return "、".join(parts)
 
 func _get_current_drop_table() -> Dictionary:
 	if _current_enemy_data.has("drops"):

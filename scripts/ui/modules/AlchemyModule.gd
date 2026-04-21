@@ -104,7 +104,7 @@ func _format_alchemy_items(items: Dictionary) -> String:
 	var parts: Array = []
 	for item_id in item_ids:
 		parts.append("%s x%d" % [_get_item_name(item_id), int(items[item_id])])
-	return "，".join(parts)
+	return "、".join(parts)
 
 func _get_alchemy_result_message(result: Dictionary, fallback: String = "") -> String:
 	var reason_code = str(result.get("reason_code", ""))
@@ -1012,14 +1012,21 @@ func _update_material_labels_text():
 			var spirit_required = recipe_data.get_recipe_spirit_energy(selected_recipe) if recipe_data else 0
 			var total_spirit = spirit_required * selected_count
 			var has_spirit = int(player.spirit_energy) if player else 0
-			label.text = "灵气: %d/%d" % [has_spirit, total_spirit]
+			label.text = "灵气: %s / %s" % [
+				UIUtils.format_display_number(float(has_spirit)),
+				UIUtils.format_display_number(float(total_spirit))
+			]
 			label.add_theme_color_override("font_color", COLOR_TEXT_RED if has_spirit < total_spirit else COLOR_TEXT_DARK)
 		else:
 			var required_per = _cached_recipe_materials.get(material_id, 0)
 			var total_required = required_per * selected_count
 			var has = inventory.get_item_count(material_id) if inventory else 0
 			var item_name = item_data.get_item_name(material_id) if item_data else material_id
-			label.text = "%s: %d/%d" % [item_name, has, total_required]
+			label.text = "%s: %s / %s" % [
+				item_name,
+				UIUtils.format_display_number(float(has)),
+				UIUtils.format_display_number(float(total_required))
+			]
 			label.add_theme_color_override("font_color", COLOR_TEXT_RED if has < total_required else COLOR_TEXT_DARK)
 
 func _update_craft_count_label():

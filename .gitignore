@@ -36,6 +36,8 @@ android/
 # Logs
 *.log
 logs/
+__pycache__/
+*.pyc
 
 # User data (local saves, configs)
 # user_data/  # 保留存档文件

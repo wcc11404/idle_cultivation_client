@@ -2,7 +2,6 @@ class_name SpellSystem extends Node
 
 signal spell_equipped(spell_id: String, spell_type: String)
 signal spell_unequipped(spell_id: String, spell_type: String)
-signal spell_upgraded(spell_id: String, new_level: int)
 signal spell_used(spell_id: String)
 
 var player: Node = null
@@ -165,49 +164,6 @@ func get_equipped_count(spell_type: String) -> int:
 	if equipped_spells.has(spell_type):
 		return equipped_spells[spell_type].size()
 	return 0
-
-func upgrade_spell(spell_id: String) -> Dictionary:
-	var result = {"success": false, "reason": "", "spell_id": spell_id, "new_level": 0}
-	
-	if not player_spells.has(spell_id):
-		result.reason = "术法不存在"
-		return result
-	
-	var spell_info = player_spells[spell_id]
-	if not spell_info.obtained:
-		result.reason = "未获取该术法"
-		return result
-	
-	var spell_config = spell_data.get_spell_data(spell_id)
-	var max_level = spell_config.get("max_level", 3)
-	
-	if spell_info.level >= max_level:
-		result.reason = "已达到最高等级"
-		return result
-	
-	var next_level = spell_info.level + 1
-	var level_data = spell_data.get_spell_level_data(spell_id, spell_info.level)
-	
-	var spirit_cost = level_data.get("spirit_cost", 0)
-	var use_count_required = level_data.get("use_count_required", 0)
-	
-	if spell_info.use_count < use_count_required:
-		result.reason = "使用次数不足（" + str(spell_info.use_count) + "/" + str(use_count_required) + "）"
-		return result
-	
-	if spell_info.charged_spirit < spirit_cost:
-		result.reason = "术法灵气不足（" + str(spell_info.charged_spirit) + "/" + str(spirit_cost) + "）"
-		return result
-	
-	spell_info.charged_spirit -= spirit_cost
-	spell_info.level = next_level
-	spell_info.use_count = 0
-	recalculate_bonuses()
-	spell_upgraded.emit(spell_id, next_level)
-	
-	result.success = true
-	result.new_level = next_level
-	return result
 
 func add_spell_use_count(spell_id: String):
 	if player_spells.has(spell_id) and player_spells[spell_id].obtained:

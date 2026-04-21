@@ -3,6 +3,7 @@ class_name ProfileEditPopup extends Panel
 const PopupStyleTemplate = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
 const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
 const AccountConfig = preload("res://scripts/core/account/AccountConfig.gd")
+const SafeAreaHelper = preload("res://scripts/ui/common/SafeAreaHelper.gd")
 
 signal nickname_submit_requested(new_nickname: String)
 signal avatar_submit_requested(avatar_id: String)
@@ -45,17 +46,13 @@ func setup(host: Control):
 
 func _build_layout():
 	layout_mode = 1
-	anchors_preset = 8
-	anchor_left = 0.5
-	anchor_top = 0.5
-	anchor_right = 0.5
-	anchor_bottom = 0.5
-	offset_left = -260.0
-	offset_top = -300.0
-	offset_right = 260.0
-	offset_bottom = 300.0
-	grow_horizontal = 2
-	grow_vertical = 2
+	anchors_preset = 0
+	anchor_left = 0.0
+	anchor_top = 0.0
+	anchor_right = 0.0
+	anchor_bottom = 0.0
+	position = Vector2(120.0, 120.0)
+	size = Vector2(520.0, 600.0)
 
 	var margin = MarginContainer.new()
 	margin.layout_mode = 1
@@ -237,13 +234,13 @@ func _on_viewport_size_changed():
 		_update_layout()
 
 func _update_layout():
-	var viewport_size = get_viewport_rect().size
+	var safe_rect := SafeAreaHelper.get_safe_inner_rect(self)
+	var viewport_size = safe_rect.size
 	var desired_w = clamp(viewport_size.x * 0.74, 420.0, 620.0)
 	var desired_h = clamp(viewport_size.y * 0.82, 520.0, 760.0)
-	offset_left = -desired_w * 0.5
-	offset_right = desired_w * 0.5
-	offset_top = -desired_h * 0.5
-	offset_bottom = desired_h * 0.5
+	var popup_pos := safe_rect.position + (safe_rect.size - Vector2(desired_w, desired_h)) * 0.5
+	position = popup_pos
+	size = Vector2(desired_w, desired_h)
 
 func _input(event: InputEvent):
 	if not visible:

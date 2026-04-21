@@ -218,7 +218,7 @@ func get_tower_reward_description(floor: int) -> String:
 		var item_name = _get_item_name(item_id)
 		descriptions.append(str(amount) + item_name)
 	
-	return "，".join(descriptions)
+	return "、".join(descriptions)
 
 func _get_item_name(item_id: String) -> String:
 	var game_manager = get_node_or_null("/root/GameManager")

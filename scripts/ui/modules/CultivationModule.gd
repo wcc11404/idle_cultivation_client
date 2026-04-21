@@ -256,7 +256,7 @@ func _build_breakthrough_resource_text(resources: Dictionary) -> String:
 	var parts: Array = []
 	for resource_id in _get_ordered_resource_ids(resources):
 		parts.append(_format_breakthrough_cost_entry(resource_id, resources[resource_id]))
-	return _join_text_parts(parts, "，")
+	return _join_text_parts(parts, "、")
 
 func _build_breakthrough_success_message(result: Dictionary) -> String:
 	var reason_data = result.get("reason_data", {})
@@ -313,24 +313,24 @@ func _build_breakthrough_preview_text(preview: Dictionary) -> String:
 		var required = int(material_info.get("required", 0))
 		var current = int(material_info.get("current", 0))
 		if current < required:
-			return "%s不足（%s/%s）" % [_get_preview_item_name(material_id), UIUtils.format_display_number(float(current)), UIUtils.format_display_number(float(required))]
+			return "%s不足（%s / %s）" % [_get_preview_item_name(material_id), UIUtils.format_display_number(float(current)), UIUtils.format_display_number(float(required))]
 
 	if reason == "灵气不足":
 		var current_energy = float(preview.get("energy_current", preview.get("spirit_energy_current", 0.0)))
 		var required_energy = float(preview.get("energy_cost", 0.0))
-		return "灵气不足（%s/%s）" % [_format_breakthrough_amount(current_energy), _format_breakthrough_amount(required_energy)]
+		return "灵气不足（%s / %s）" % [_format_breakthrough_amount(current_energy), _format_breakthrough_amount(required_energy)]
 
 	if reason == "灵石不足":
 		var current_stone = float(preview.get("stone_current", preview.get("spirit_stone_current", 0.0)))
 		var required_stone = float(preview.get("stone_cost", 0.0))
-		return "灵石不足（%s/%s）" % [_format_breakthrough_amount(current_stone), _format_breakthrough_amount(required_stone)]
+		return "灵石不足（%s / %s）" % [_format_breakthrough_amount(current_stone), _format_breakthrough_amount(required_stone)]
 
 	if not reason.is_empty():
 		return reason
 
 	var missing_parts = _get_breakthrough_missing_parts(preview)
 	if not missing_parts.is_empty():
-		return "缺少" + _join_text_parts(missing_parts, "，")
+		return "缺少" + _join_text_parts(missing_parts, "、")
 
 	return "暂不可突破"
 
@@ -649,22 +649,22 @@ func update_display(status: Dictionary = {}):
 		health_bar.value = status.health
 	if health_value:
 		var final_max_health2 = player.get_final_max_health()
-		health_value.text = AttributeCalculator.format_health_spirit(status.health) + "/" + AttributeCalculator.format_health_spirit(final_max_health2)
+		health_value.text = UIUtils.format_display_number_integer(status.health) + " / " + UIUtils.format_display_number_integer(final_max_health2)
 
 	if spirit_bar:
 		spirit_bar.max_value = player.get_final_max_spirit_energy()
 		spirit_bar.value = status.spirit_energy
 	if spirit_value:
-		spirit_value.text = AttributeCalculator.format_health_spirit(status.spirit_energy) + "/" + AttributeCalculator.format_health_spirit(player.get_final_max_spirit_energy())
+		spirit_value.text = UIUtils.format_display_number_integer(status.spirit_energy) + " / " + UIUtils.format_display_number_integer(player.get_final_max_spirit_energy())
 
 	if attack_label:
-		attack_label.text = "攻击: " + AttributeCalculator.format_attack_defense(player.get_final_attack())
+		attack_label.text = "攻击: " + UIUtils.format_display_number(player.get_final_attack())
 	if defense_label:
-		defense_label.text = "防御: " + AttributeCalculator.format_attack_defense(player.get_final_defense())
+		defense_label.text = "防御: " + UIUtils.format_display_number(player.get_final_defense())
 	if speed_label:
-		speed_label.text = "速度: " + AttributeCalculator.format_speed(player.get_final_speed())
+		speed_label.text = "速度: " + UIUtils.format_display_number(player.get_final_speed())
 	if spirit_gain_label:
-		spirit_gain_label.text = "灵气获取: " + AttributeCalculator.format_spirit_gain_speed(player.get_final_spirit_gain_speed()) + "/秒"
+		spirit_gain_label.text = "灵气获取: " + UIUtils.format_display_number(player.get_final_spirit_gain_speed()) + "/秒"
 
 	if status.is_cultivating:
 		if status_label:

@@ -18,6 +18,8 @@
 - 乐观更新：客户端先行更新本地展示，后续再上报或全量同步。
 - 预扣池：炼丹每次开炉后，本地先预扣当前轮次材料/灵气。
 - 回放：历练按服务端返回的战斗时间轴进行本地 UI 播放。
+- 字体/图标真值：客户端 UI 文本使用内置字体资源，常用图标使用客户端内置 SVG，不依赖系统 emoji 或系统中文字体回退。
+- 安全区内容区：主界面逻辑设计基线固定为 `720×1280`，长屏/异形屏只把多余空间分配给安全区背景与少量可伸缩容器，不重新拉大核心构图。
 
 ## 模块导航
 
@@ -35,8 +37,14 @@
 - 客户端统一入口：`./run_tests.sh`
 - 默认 API 基址：`http://localhost:8444/api`
 - 测试账号：`test / test123`
+- 分辨率 / 长屏人工预览场景：`res://scenes/debug/ResolutionPreview.tscn`
 
 详见：[客户端 GUT API 化测试说明](./03-testing/GUT_API_Testing.md)
+
+## UI 与分辨率验收
+
+- [长屏 / 异形屏人工验收与预览工具说明](./03-testing/UI_Resolution_Manual_Checklist.md)
+- [UI 自动化测试规划建议](./03-testing/UI_Automation_Roadmap.md)
 
 ## UI 模板索引
 

@@ -136,7 +136,7 @@ func _format_inventory_contents(contents: Dictionary) -> String:
 	var parts: Array = []
 	for item_id in item_ids:
 		parts.append("%s x%d" % [_get_item_name(item_id), int(contents[item_id])])
-	return "，".join(parts)
+	return "、".join(parts)
 
 func _get_inventory_result_message(result: Dictionary, fallback: String = "") -> String:
 	var reason_code = str(result.get("reason_code", ""))
@@ -203,7 +203,7 @@ func _get_inventory_result_message(result: Dictionary, fallback: String = "") ->
 		"INVENTORY_DISCARD_ITEM_NOT_ENOUGH":
 			return item_name + "数量不足"
 		"INVENTORY_EXPAND_SUCCEEDED":
-			return "纳戒扩容成功，当前容量%d格" % int(reason_data.get("new_capacity", 0))
+			return "纳戒扩容成功，当前容量%s格" % UIUtils.format_display_number_integer(float(reason_data.get("new_capacity", 0)))
 		"INVENTORY_EXPAND_CAPACITY_MAX":
 			return "纳戒已达到最大容量"
 		"INVENTORY_ORGANIZE_SUCCEEDED":
@@ -545,7 +545,7 @@ func update_inventory_ui():
 	if capacity_label:
 		var used = inventory.get_used_slots()
 		var cap = inventory.get_capacity()
-		capacity_label.text = "容量：" + UIUtils.format_display_number(float(used)) + "/" + UIUtils.format_display_number(float(cap))
+		capacity_label.text = "容量：" + UIUtils.format_display_number_integer(float(used)) + " / " + UIUtils.format_display_number_integer(float(cap))
 	
 	# 更新扩展按钮状态
 	if expand_button:
@@ -580,7 +580,7 @@ func update_inventory_ui():
 					name_label.add_theme_color_override("font_color", _get_display_quality_color(quality))
 				if count_label:
 					if count > 1:
-						count_label.text = "x" + UIUtils.format_number(int(count))
+						count_label.text = "x" + UIUtils.format_display_number_integer(float(count))
 					else:
 						count_label.text = ""
 				_apply_slot_visual(child, false, index == current_selected_index)
@@ -652,11 +652,14 @@ func _show_item_detail(index: int):
 	var quality = item_info.get("quality", 0)
 	var type = item_info.get("type", 0)
 	
-	var detail_name = item_detail_panel.get_node_or_null("VBoxContainer/DetailName")
-	var detail_desc = item_detail_panel.get_node_or_null("VBoxContainer/ScrollContainer/DetailContent/DetailDesc")
-	var detail_type = item_detail_panel.get_node_or_null("VBoxContainer/DetailType")
-	var detail_count = item_detail_panel.get_node_or_null("VBoxContainer/DetailInfo/DetailCount")
-	var detail_stats = item_detail_panel.get_node_or_null("VBoxContainer/ScrollContainer/DetailContent/DetailStats")
+	var detail_name = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoVBox/DetailName")
+	var detail_desc = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/DescVBox/ScrollContainer/DetailContent/DetailDesc")
+	var detail_type = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoVBox/DetailInfo/DetailType")
+	var detail_count = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoVBox/DetailInfo/DetailCount")
+	var detail_stats = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/DescVBox/ScrollContainer/DetailContent/DetailStats")
+	var desc_title = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/DescVBox/DescTitle")
+	var info_separator = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoSeparator")
+	var button_separator = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/ButtonSeparator")
 	
 	if detail_name:
 		detail_name.text = item_name
@@ -680,6 +683,12 @@ func _show_item_detail(index: int):
 	# 隐藏装备属性显示（暂无装备类物品）
 	if detail_stats:
 		detail_stats.visible = false
+	if desc_title:
+		desc_title.visible = true
+	if info_separator:
+		info_separator.visible = true
+	if button_separator:
+		button_separator.visible = true
 	
 	# 按钮可见性控制（根据新的物品类型系统）
 	# 查看按钮已移除，详情直接显示在面板中
@@ -714,11 +723,14 @@ func _clear_item_detail_panel():
 	if not item_detail_panel:
 		return
 	
-	var detail_name = item_detail_panel.get_node_or_null("VBoxContainer/DetailName")
-	var detail_desc = item_detail_panel.get_node_or_null("VBoxContainer/ScrollContainer/DetailContent/DetailDesc")
-	var detail_type = item_detail_panel.get_node_or_null("VBoxContainer/DetailType")
-	var detail_count = item_detail_panel.get_node_or_null("VBoxContainer/DetailInfo/DetailCount")
-	var detail_stats = item_detail_panel.get_node_or_null("VBoxContainer/ScrollContainer/DetailContent/DetailStats")
+	var detail_name = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoVBox/DetailName")
+	var detail_desc = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/DescVBox/ScrollContainer/DetailContent/DetailDesc")
+	var detail_type = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoVBox/DetailInfo/DetailType")
+	var detail_count = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoVBox/DetailInfo/DetailCount")
+	var detail_stats = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/DescVBox/ScrollContainer/DetailContent/DetailStats")
+	var desc_title = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/DescVBox/DescTitle")
+	var info_separator = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoSeparator")
+	var button_separator = item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/ButtonSeparator")
 	
 	if detail_name:
 		detail_name.text = ""
@@ -730,6 +742,12 @@ func _clear_item_detail_panel():
 		detail_count.text = ""
 	if detail_stats:
 		detail_stats.visible = false
+	if desc_title:
+		desc_title.visible = false
+	if info_separator:
+		info_separator.visible = false
+	if button_separator:
+		button_separator.visible = false
 	
 	if view_button:
 		view_button.visible = false

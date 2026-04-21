@@ -16,6 +16,9 @@ const TabBarStyleTemplate = preload("res://scripts/ui/common/TabBarStyleTemplate
 const DisplayPanelTemplate = preload("res://scripts/ui/common/DisplayPanelTemplate.gd")
 const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
 const AccountConfig = preload("res://scripts/core/account/AccountConfig.gd")
+const UIFontProvider = preload("res://scripts/ui/common/UIFontProvider.gd")
+const UIIconProvider = preload("res://scripts/ui/common/UIIconProvider.gd")
+const SafeAreaHelper = preload("res://scripts/ui/common/SafeAreaHelper.gd")
 
 var player: Node = null
 var inventory: Node = null
@@ -66,163 +69,170 @@ const REALM_FRAME_TEXTURES = {
 	"渡劫期": "res://assets/realm_frames/realm_frame_tribulation.png"
 }
 
-@onready var player_name_label_top: Label = $VBoxContainer/TopBar/TopBarContent/PlayerInfo/PlayerNameLabel
-@onready var avatar_texture: TextureRect = $VBoxContainer/TopBar/TopBarContent/PlayerInfo/AvatarContainer/AvatarTexture
-@onready var top_player_info: HBoxContainer = $VBoxContainer/TopBar/TopBarContent/PlayerInfo
-@onready var top_bar_background: TextureRect = $VBoxContainer/TopBar/TopBarBackground
-@onready var realm_label: Label = $VBoxContainer/TopBar/TopBarContent/RealmContainer/RealmLabel
-@onready var spirit_stone_label: Label = $VBoxContainer/TopBar/TopBarContent/SpiritStoneContainer/SpiritStoneLabel
+@onready var player_name_label_top: Label = $ContentFrame/VBoxContainer/TopBar/TopBarContent/PlayerInfo/PlayerNameLabel
+@onready var avatar_texture: TextureRect = $ContentFrame/VBoxContainer/TopBar/TopBarContent/PlayerInfo/AvatarContainer/AvatarTexture
+@onready var top_player_info: HBoxContainer = $ContentFrame/VBoxContainer/TopBar/TopBarContent/PlayerInfo
+@onready var top_bar_background: TextureRect = $ContentFrame/VBoxContainer/TopBar/TopBarBackground
+@onready var safe_top: Control = $SafeTop
+@onready var safe_top_fill: TextureRect = $SafeTop/TopFill
+@onready var content_frame: Control = $ContentFrame
+@onready var safe_bottom: Control = $SafeBottom
+@onready var safe_bottom_fill: ColorRect = $SafeBottom/BottomFill
+@onready var realm_label: Label = $ContentFrame/VBoxContainer/TopBar/TopBarContent/RealmContainer/RealmLabel
+@onready var spirit_stone_label: Label = $ContentFrame/VBoxContainer/TopBar/TopBarContent/SpiritStoneContainer/SpiritStoneLabel
+@onready var spirit_stone_icon: TextureRect = $ContentFrame/VBoxContainer/TopBar/TopBarContent/SpiritStoneContainer/SpiritStoneIcon
 
-@onready var status_label: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual/CultivationStatusLabel
-@onready var health_bar: ProgressBar = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HealthRow/HealthBar
-@onready var health_value: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HealthRow/HealthValue
+@onready var status_label: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual/CultivationStatusLabel
+@onready var health_bar: ProgressBar = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HealthRow/HealthBar
+@onready var health_value: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HealthRow/HealthValue
 
 # 灵气条
-@onready var spirit_bar: ProgressBar = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritRow/SpiritBar
-@onready var spirit_value: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritRow/SpiritValue
+@onready var spirit_bar: ProgressBar = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritRow/SpiritBar
+@onready var spirit_value: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritRow/SpiritValue
 
 # 属性标签
-@onready var attack_label: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsRow/AttackLabel
-@onready var defense_label: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsRow/DefenseLabel
-@onready var speed_label: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsRow/SpeedLabel
-@onready var spirit_gain_label: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritGainLabel
+@onready var attack_label: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsRow/AttackLabel
+@onready var defense_label: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsRow/DefenseLabel
+@onready var speed_label: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsRow/SpeedLabel
+@onready var spirit_gain_label: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritGainLabel
 
 # 修炼小人素材
-@onready var cultivation_figure: TextureRect = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual/CultivationFigure
-@onready var cultivation_figure_particles: TextureRect = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual/CultivationFigureParticles
-@onready var cultivation_visual: Control = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual
+@onready var cultivation_figure: TextureRect = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual/CultivationFigure
+@onready var cultivation_figure_particles: TextureRect = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual/CultivationFigureParticles
+@onready var cultivation_visual: Control = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual
 
-@onready var log_text: RichTextLabel = $VBoxContainer/LogArea/LogText
-@onready var cultivate_button: Button = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughButtonBar/CultivateButton
-@onready var breakthrough_button: Button = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughButtonBar/BreakthroughButton
-@onready var bottom_bar: HBoxContainer = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughButtonBar
-@onready var breakthrough_material_label_1: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin/BreakthroughMaterialsRow/BreakthroughMaterialLabel1
-@onready var breakthrough_material_label_2: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin/BreakthroughMaterialsRow/BreakthroughMaterialLabel2
-@onready var breakthrough_material_label_3: Label = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin/BreakthroughMaterialsRow/BreakthroughMaterialLabel3
+@onready var log_text: RichTextLabel = $ContentFrame/VBoxContainer/LogArea/LogText
+@onready var cultivate_button: Button = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughButtonBar/CultivateButton
+@onready var breakthrough_button: Button = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughButtonBar/BreakthroughButton
+@onready var bottom_bar: HBoxContainer = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughButtonBar
+@onready var breakthrough_material_label_1: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin/BreakthroughMaterialsRow/BreakthroughMaterialLabel1
+@onready var breakthrough_material_label_2: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin/BreakthroughMaterialsRow/BreakthroughMaterialLabel2
+@onready var breakthrough_material_label_3: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin/BreakthroughMaterialsRow/BreakthroughMaterialLabel3
 
-@onready var tab_neishi: Button = $VBoxContainer/TabBar/NeishiButton
-@onready var tab_chuna: Button = $VBoxContainer/TabBar/ChunaButton
-@onready var tab_region: Button = get_node_or_null("VBoxContainer/TabBar/RegionButton")
-@onready var tab_lianli: Button = $VBoxContainer/TabBar/BattleButton
-@onready var tab_settings: Button = $VBoxContainer/TabBar/SettingsButton
-@onready var tab_bar: HBoxContainer = $VBoxContainer/TabBar
-@onready var neishi_tab_bar: HBoxContainer = $VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar
-@onready var bottom_spacer: Control = get_node_or_null("VBoxContainer/BottomSpacer")
-@onready var status_header_row: HBoxContainer = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsHeaderRow")
-@onready var breakthrough_header_row: HBoxContainer = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughHeaderRow")
-@onready var status_header_bottom_spacer: Control = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HeaderBottomSpacer")
-@onready var status_health_left_pad: Control = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HealthRow/HealthLeftPad")
-@onready var status_spirit_left_pad: Control = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritRow/SpiritLeftPad")
-@onready var status_separator_margin: MarginContainer = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SeparatorMargin")
-@onready var breakthrough_header_bottom_spacer: Control = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughHeaderBottomSpacer")
-@onready var breakthrough_materials_margin: MarginContainer = get_node_or_null("VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin")
+@onready var tab_neishi: Button = $ContentFrame/VBoxContainer/TabBar/NeishiButton
+@onready var tab_chuna: Button = $ContentFrame/VBoxContainer/TabBar/ChunaButton
+@onready var tab_region: Button = get_node_or_null("ContentFrame/VBoxContainer/TabBar/RegionButton")
+@onready var tab_lianli: Button = $ContentFrame/VBoxContainer/TabBar/BattleButton
+@onready var tab_settings: Button = $ContentFrame/VBoxContainer/TabBar/SettingsButton
+@onready var tab_bar: HBoxContainer = $ContentFrame/VBoxContainer/TabBar
+@onready var neishi_tab_bar: HBoxContainer = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar
+@onready var bottom_spacer: Control = get_node_or_null("ContentFrame/VBoxContainer/BottomSpacer")
+@onready var status_header_row: HBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/StatsHeaderRow")
+@onready var breakthrough_header_row: HBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughHeaderRow")
+@onready var status_header_bottom_spacer: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HeaderBottomSpacer")
+@onready var status_health_left_pad: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HealthRow/HealthLeftPad")
+@onready var status_spirit_left_pad: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SpiritRow/SpiritLeftPad")
+@onready var status_separator_margin: MarginContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/SeparatorMargin")
+@onready var breakthrough_header_bottom_spacer: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughHeaderBottomSpacer")
+@onready var breakthrough_materials_margin: MarginContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/BreakthroughPanel/BreakthroughPanelMargin/BreakthroughPanelVBox/BreakthroughMaterialsMargin")
 
-@onready var neishi_panel: Control = $VBoxContainer/ContentPanel/NeishiPanel
-@onready var chuna_panel: Control = $VBoxContainer/ContentPanel/ChunaPanel
-@onready var region_panel: Control = get_node_or_null("VBoxContainer/ContentPanel/RegionPanel")
-@onready var herb_gather_panel: Control = get_node_or_null("VBoxContainer/ContentPanel/HerbGatherPanel")
-@onready var lianli_panel: Control = $VBoxContainer/ContentPanel/LianliPanel
-@onready var settings_panel: Control = $VBoxContainer/ContentPanel/SettingsPanel
-@onready var settings_scroll: ScrollContainer = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll
+@onready var neishi_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel
+@onready var chuna_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel
+@onready var region_panel: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/RegionPanel")
+@onready var herb_gather_panel: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/HerbGatherPanel")
+@onready var lianli_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel
+@onready var settings_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel
+@onready var settings_scroll: ScrollContainer = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll
 
 # 内室子Tab
-@onready var cultivation_tab: Button = $VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar/CultivationTab
-@onready var spell_tab: Button = $VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar/SpellTab
+@onready var cultivation_tab: Button = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar/CultivationTab
+@onready var spell_tab: Button = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/NeishiTabBar/SpellTab
 
-@onready var cultivation_panel: Control = $VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer
-@onready var spell_panel: Control = $VBoxContainer/ContentPanel/NeishiPanel/SpellPanel
-@onready var save_button: Button = get_node_or_null("VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SaveButton")
-@onready var fps_30_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps30Button
-@onready var fps_60_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps60Button
-@onready var fps_120_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps120Button
-@onready var fps_144_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps144Button
-@onready var fps_unlimited_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/FpsUnlimitedButton
-@onready var fps_limit_option_button: OptionButton = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsLimitOptionButton
-@onready var music_mute_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/AudioSection/MusicRow/MusicMuteButton
-@onready var music_volume_slider: HSlider = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/AudioSection/MusicRow/MusicVolumeSlider
-@onready var music_volume_value_label: Label = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/AudioSection/MusicRow/MusicVolumeValueLabel
-@onready var redeem_code_input: LineEdit = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/RedeemSection/RedeemCodeRow/RedeemCodeInput
-@onready var redeem_confirm_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/RedeemSection/RedeemCodeRow/RedeemConfirmButton
-@onready var mailbox_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/MailboxButton
-@onready var mall_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/MallButton
-@onready var rank_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/RankButton
-@onready var guide_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/GuideButton
-@onready var logout_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/LogoutButton
-@onready var rank_panel: Control = $VBoxContainer/ContentPanel/SettingsPanel/RankPanel
-@onready var rank_list: VBoxContainer = $VBoxContainer/ContentPanel/SettingsPanel/RankPanel/VBoxContainer/RankList
-@onready var back_button: Button = $VBoxContainer/ContentPanel/SettingsPanel/RankPanel/VBoxContainer/TitleBar/BackButton
+@onready var cultivation_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer
+@onready var spell_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/SpellPanel
+@onready var save_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SaveButton")
+@onready var fps_30_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps30Button
+@onready var fps_60_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps60Button
+@onready var fps_120_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps120Button
+@onready var fps_144_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/Fps144Button
+@onready var fps_unlimited_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsPresetRow/FpsUnlimitedButton
+@onready var fps_limit_option_button: OptionButton = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/FpsSection/FpsLimitOptionButton
+@onready var music_mute_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/AudioSection/MusicRow/MusicMuteButton
+@onready var music_volume_slider: HSlider = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/AudioSection/MusicRow/MusicVolumeSlider
+@onready var music_volume_value_label: Label = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/AudioSection/MusicRow/MusicVolumeValueLabel
+@onready var redeem_code_input: LineEdit = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/RedeemSection/RedeemCodeRow/RedeemCodeInput
+@onready var redeem_confirm_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/RedeemSection/RedeemCodeRow/RedeemConfirmButton
+@onready var mailbox_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/MailboxButton
+@onready var mall_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/MallButton
+@onready var rank_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/RankButton
+@onready var guide_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/GuideButton
+@onready var logout_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll/SettingsContentVBox/ActionButtons/LogoutButton
+@onready var rank_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/RankPanel
+@onready var rank_list: VBoxContainer = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/RankPanel/VBoxContainer/RankList
+@onready var back_button: Button = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/RankPanel/VBoxContainer/TitleBar/BackButton
 
-@onready var lianli_select_panel: Control = $VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel
-@onready var lianli_scene_panel: Control = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel
+@onready var lianli_select_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel
+@onready var lianli_scene_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel
 
-@onready var inventory_grid: GridContainer = $VBoxContainer/ContentPanel/ChunaPanel/ScrollContainer/InventoryGrid
-@onready var capacity_label: Label = $VBoxContainer/ContentPanel/ChunaPanel/TopBar/CapacityLabel
-@onready var expand_button: Button = $VBoxContainer/ContentPanel/ChunaPanel/TopBar/ExpandButton
-@onready var sort_button: Button = $VBoxContainer/ContentPanel/ChunaPanel/TopBar/SortButton
-@onready var item_detail_panel: Panel = $VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel
+@onready var inventory_grid: GridContainer = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/ScrollContainer/InventoryGrid
+@onready var capacity_label: Label = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/TopBar/CapacityLabel
+@onready var expand_button: Button = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/TopBar/ExpandButton
+@onready var sort_button: Button = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/TopBar/SortButton
+@onready var item_detail_panel: Panel = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel
 # 查看按钮（可选）
 var view_button: Button = null
-@onready var use_button: Button = $VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel/VBoxContainer/ButtonContainer/UseButton
-@onready var discard_button: Button = $VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel/VBoxContainer/ButtonContainer/DiscardButton
+@onready var use_button: Button = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel/VBoxContainer/MainHBox/ButtonContainer/ButtonVBox/UseButton
+@onready var discard_button: Button = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel/VBoxContainer/MainHBox/ButtonContainer/ButtonVBox/DiscardButton
 
-@onready var lianli_area_1_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area1Button")
-@onready var lianli_area_2_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area2Button")
-@onready var lianli_area_3_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area3Button")
-@onready var lianli_area_4_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area4Button")
-@onready var lianli_area_5_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area5Button")
-@onready var lianli_area_6_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/EndlessTowerButton")
-@onready var endless_tower_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/EndlessTowerButton")
+@onready var lianli_area_1_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area1Button")
+@onready var lianli_area_2_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area2Button")
+@onready var lianli_area_3_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area3Button")
+@onready var lianli_area_4_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area4Button")
+@onready var lianli_area_5_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/Area5Button")
+@onready var lianli_area_6_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/EndlessTowerButton")
+@onready var endless_tower_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliSelectPanel/VBoxContainer/EndlessTowerButton")
 
 # 炼丹房UI节点
-@onready var alchemy_workshop_button: Button = get_node_or_null("VBoxContainer/ContentPanel/RegionPanel/VBoxContainer/AlchemyWorkshopButton")
-@onready var herb_mountain_button: Button = get_node_or_null("VBoxContainer/ContentPanel/RegionPanel/VBoxContainer/HerbMountainButton")
-@onready var herb_gather_back_button: Button = get_node_or_null("VBoxContainer/ContentPanel/HerbGatherPanel/VBoxContainer/TitleBar/BackButton")
-@onready var herb_gather_point_list: VBoxContainer = get_node_or_null("VBoxContainer/ContentPanel/HerbGatherPanel/VBoxContainer/PointScroll/PointList")
-@onready var alchemy_room_panel: Control = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel")
-@onready var recipe_list_container: VBoxContainer = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/RecipeListPanel/RecipeListVBox/RecipeScroll/RecipeListContainer")
-@onready var recipe_name_label: Label = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/RecipeNameLabel")
-@onready var success_rate_label: Label = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/SuccessRateLabel")
-@onready var craft_time_label: Label = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CraftTimeLabel")
-@onready var materials_container: VBoxContainer = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/MaterialsContainer")
-@onready var craft_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/ButtonHBox/CraftButton")
-@onready var stop_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/ButtonHBox/StopButton")
-@onready var craft_progress_bar: ProgressBar = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CraftProgressBar")
-@onready var craft_count_label: Label = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CraftCountLabel")
-@onready var count_1_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/Count1Button")
-@onready var count_10_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/Count10Button")
-@onready var count_100_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/Count100Button")
-@onready var count_max_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/CountMaxButton")
-@onready var count_plus_10_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/CountPlus10Button")
-@onready var count_final_max_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/CountFinalMaxButton")
-@onready var alchemy_info_label: Label = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/BottomPanel/BottomVBox/BottomHBox/AlchemyInfoLabel")
-@onready var furnace_info_label: Label = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/BottomPanel/BottomVBox/BottomHBox/FurnaceInfoLabel")
-@onready var alchemy_back_button: Button = get_node_or_null("VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/TitleBar/BackButton")
+@onready var alchemy_workshop_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/RegionPanel/VBoxContainer/AlchemyWorkshopButton")
+@onready var herb_mountain_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/RegionPanel/VBoxContainer/HerbMountainButton")
+@onready var herb_gather_back_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/HerbGatherPanel/VBoxContainer/TitleBar/BackButton")
+@onready var herb_gather_point_list: VBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/HerbGatherPanel/VBoxContainer/PointScroll/PointList")
+@onready var alchemy_room_panel: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel")
+@onready var recipe_list_container: VBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/RecipeListPanel/RecipeListVBox/RecipeScroll/RecipeListContainer")
+@onready var recipe_name_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/RecipeNameLabel")
+@onready var success_rate_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/SuccessRateLabel")
+@onready var craft_time_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CraftTimeLabel")
+@onready var materials_container: VBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/MaterialsContainer")
+@onready var craft_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/ButtonHBox/CraftButton")
+@onready var stop_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/ButtonHBox/StopButton")
+@onready var craft_progress_bar: ProgressBar = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CraftProgressBar")
+@onready var craft_count_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CraftCountLabel")
+@onready var count_1_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/Count1Button")
+@onready var count_10_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/Count10Button")
+@onready var count_100_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/Count100Button")
+@onready var count_max_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/CountMaxButton")
+@onready var count_plus_10_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/CountPlus10Button")
+@onready var count_final_max_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/CountHBox/CountFinalMaxButton")
+@onready var alchemy_info_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/BottomPanel/BottomVBox/BottomHBox/AlchemyInfoLabel")
+@onready var furnace_info_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/BottomPanel/BottomVBox/BottomHBox/FurnaceInfoLabel")
+@onready var alchemy_back_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/TitleBar/BackButton")
 
 # 区域按钮列表
 var lianli_area_buttons: Array = []
 var lianli_area_ids: Array = []
 
-@onready var player_name_label: Label = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/PlayerInfo/PlayerNameLabel
-@onready var player_health_bar_lianli: ProgressBar = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/PlayerInfo/PlayerHealthBar
-@onready var player_health_value_lianli: Label = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/PlayerInfo/PlayerHealthValue
-@onready var enemy_name_label: Label = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/EnemyInfo/EnemyNameLabel
-@onready var enemy_health_bar: ProgressBar = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/EnemyInfo/EnemyHealthBar
-@onready var enemy_health_value: Label = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/EnemyInfo/EnemyHealthValue
-@onready var lianli_status_label: Label = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/LianliStatusLabel
+@onready var player_name_label: Label = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/PlayerInfo/PlayerNameLabel
+@onready var player_health_bar_lianli: ProgressBar = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/PlayerInfo/PlayerHealthBar
+@onready var player_health_value_lianli: Label = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/PlayerInfo/PlayerHealthValue
+@onready var enemy_name_label: Label = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/EnemyInfo/EnemyNameLabel
+@onready var enemy_health_bar: ProgressBar = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/EnemyInfo/EnemyHealthBar
+@onready var enemy_health_value: Label = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/CombatInfoPanel/CombatInfoMargin/CombatInfoVBox/EnemyInfo/EnemyHealthValue
+@onready var lianli_status_label: Label = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/LianliStatusLabel
 
 # BattleInfo UI控件
-@onready var area_name_label: Label = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/AreaInfoPanel/AreaInfoMargin/AreaInfoVBox/AreaInfoContentMargin/AreaInfoContentVBox/AreaNameLabel")
-@onready var reward_info_label: Label = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/AreaInfoPanel/AreaInfoMargin/AreaInfoVBox/AreaInfoContentMargin/AreaInfoContentVBox/RewardInfoLabel")
+@onready var area_name_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/AreaInfoPanel/AreaInfoMargin/AreaInfoVBox/AreaInfoContentMargin/AreaInfoContentVBox/AreaNameLabel")
+@onready var reward_info_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/AreaInfoPanel/AreaInfoMargin/AreaInfoVBox/AreaInfoContentMargin/AreaInfoContentVBox/RewardInfoLabel")
 
 # BattleButtonContainer UI控件
-@onready var continuous_checkbox: CheckBox = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/ContinuousCheckBox")
-@onready var continue_button: Button = get_node_or_null("VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/ContinueButton")
-@onready var lianli_speed_button: Button = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/SpeedExitContainer/LianliSpeedButton
-@onready var exit_lianli_button: Button = $VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/SpeedExitContainer/ExitLianliButton
+@onready var continuous_checkbox: CheckBox = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/ContinuousCheckBox")
+@onready var continue_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/ContinueButton")
+@onready var lianli_speed_button: Button = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/SpeedExitContainer/LianliSpeedButton
+@onready var exit_lianli_button: Button = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel/LianliScenePanel/VBoxContainer/BattleButtonContainer/SpeedExitContainer/ExitLianliButton
 
 var log_manager: LogManager = null
 
 const GRID_COLS = 5
+const DESIGN_CONTENT_SIZE := Vector2(720.0, 1280.0)
 
 var item_data_ref: Node = null
 var spell_data_ref: Node = null
@@ -240,6 +250,9 @@ var _network_ui_last_log_at: float = 0.0
 const NETWORK_UI_LOG_THROTTLE_SECONDS := 2.0
 
 func _ready():
+	UIFontProvider.apply_to_root(self)
+	if spirit_stone_icon:
+		spirit_stone_icon.texture = UIIconProvider.load_svg_texture(UIIconProvider.ICON_SPIRIT_STONE)
 	# 安全获取可选节点
 	_setup_optional_nodes()
 	_setup_bottom_tab_layout()
@@ -282,15 +295,17 @@ func _ready():
 	await claim_offline_reward()
 
 func _setup_optional_nodes():
-	view_button = get_node_or_null("VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel/VBoxContainer/ButtonContainer/ViewButton")
+	view_button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/ChunaPanel/ItemDetailPanel/VBoxContainer/MainHBox/ButtonContainer/ButtonVBox/ViewButton")
 	_setup_action_button_templates()
 	_setup_log_scroll_behavior()
 	_setup_settings_scroll_behavior()
 	_setup_status_header_style()
 	_setup_breakthrough_panel_style()
+	_apply_safe_area_layout()
 
 	# 监听屏幕大小变化
-	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	if get_viewport() and not get_viewport().size_changed.is_connected(_on_viewport_size_changed):
+		get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 func _setup_action_button_templates():
 	if cultivate_button:
@@ -400,41 +415,33 @@ func _setup_neishi_sub_tab_layout():
 	})
 
 func _on_viewport_size_changed():
-	update_font_sizes()
+	_apply_safe_area_layout()
 
 func update_font_sizes():
-	var screen_width = get_viewport().get_visible_rect().size.x
-	var scale_factor = screen_width / 720.0
-	
-	# 更新主要标签字体大小
-	var base_font_sizes = {
-		"player_name": 26,
-		"realm": 24,
-		"spirit_stone": 20,
-		"status": 20,
-		"health_value": 16,
-		"log": 14,
-		"button": 18
-	}
-	
-	if player_name_label_top:
-		player_name_label_top.add_theme_font_size_override("font_size", int(base_font_sizes["player_name"] * scale_factor))
-	if realm_label:
-		realm_label.add_theme_font_size_override("font_size", int(base_font_sizes["realm"] * scale_factor))
-	if spirit_stone_label:
-		spirit_stone_label.add_theme_font_size_override("font_size", int(base_font_sizes["spirit_stone"] * scale_factor))
-	if status_label:
-		status_label.add_theme_font_size_override("font_size", int(base_font_sizes["status"] * scale_factor))
-	if health_value:
-		health_value.add_theme_font_size_override("font_size", int(base_font_sizes["health_value"] * scale_factor))
-	if log_text:
-		log_text.add_theme_font_size_override("normal_font_size", int(base_font_sizes["log"] * scale_factor))
-	
-	# 更新按钮字体
-	var buttons = [cultivate_button, breakthrough_button]
-	for button in buttons:
-		if button:
-			button.add_theme_font_size_override("font_size", int(base_font_sizes["button"] * scale_factor))
+	# 主界面常驻字体回归固定设计稿字号，不再按真实屏幕宽度二次缩放。
+	return
+
+func _apply_safe_area_layout():
+	if not content_frame:
+		return
+	var viewport_rect: Rect2 = get_viewport().get_visible_rect()
+	var safe_rect: Rect2 = SafeAreaHelper.get_safe_inner_rect(self)
+	content_frame.scale = Vector2.ONE
+	content_frame.position = safe_rect.position
+	content_frame.size = safe_rect.size
+	_update_safe_fill_frames(viewport_rect.size, safe_rect)
+
+func _update_safe_fill_frames(viewport_size: Vector2, safe_rect: Rect2):
+	if safe_top:
+		safe_top.position = Vector2.ZERO
+		safe_top.size = Vector2(viewport_size.x, max(0.0, safe_rect.position.y))
+	if safe_top_fill:
+		safe_top_fill.texture = null
+	if safe_bottom:
+		safe_bottom.position = Vector2(0.0, safe_rect.end.y)
+		safe_bottom.size = Vector2(viewport_size.x, max(0.0, viewport_size.y - safe_rect.end.y))
+	if safe_bottom_fill:
+		safe_bottom_fill.color = Color(0, 0, 0, 0)
 
 func _process(delta: float):
 	# 更新UI
@@ -1416,7 +1423,7 @@ func _update_dungeon_button_text(button: Button, dungeon_id: String, area_name: 
 	var cached_info = dungeon_info_cache.get(dungeon_id, {"remaining_count": 3, "max_count": 3})
 	var remaining = int(cached_info.get("remaining_count", 3))
 	var max_count = int(cached_info.get("max_count", 3))
-	button.text = area_name + " (剩余: " + str(remaining) + "/" + str(max_count) + ")"
+	button.text = area_name + " (剩余: " + UIUtils.format_display_number_integer(float(remaining)) + " / " + UIUtils.format_display_number_integer(float(max_count)) + ")"
 
 func _refresh_lianli_info_from_server():
 	if not api:
@@ -1552,7 +1559,7 @@ func update_ui():
 	var stone_count = 0
 	if inventory:
 		stone_count = inventory.get_item_count("spirit_stone")
-	spirit_stone_label.text = "灵石: " + UIUtils.format_number(stone_count)
+	spirit_stone_label.text = UIUtils.format_display_number(float(stone_count))
 	
 	# 更新修炼面板显示（通过CultivationModule）
 	if cultivation_module:
@@ -1566,6 +1573,8 @@ func update_realm_background(realm_name: String):
 	var texture = load(texture_path)
 	if texture:
 		top_bar_background.texture = texture
+		if safe_top_fill:
+			safe_top_fill.texture = null
 
 # 修炼按钮处理已迁移到 CultivationModule
 

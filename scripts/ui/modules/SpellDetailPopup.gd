@@ -2,6 +2,7 @@ class_name SpellDetailPopup extends Panel
 
 const PopupStyleTemplate = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
 const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const SafeAreaHelper = preload("res://scripts/ui/common/SafeAreaHelper.gd")
 
 ## 术法详情弹窗 - 独立管理弹窗UI
 ## 负责显示术法详细信息、升级条件、充灵操作等
@@ -69,17 +70,13 @@ func _input(event: InputEvent) -> void:
 func _create_popup_content():
 	"""创建弹窗内容"""
 	layout_mode = 1
-	anchors_preset = 8
-	anchor_left = 0.5
-	anchor_top = 0.5
-	anchor_right = 0.5
-	anchor_bottom = 0.5
-	offset_left = -180.0
-	offset_top = -220.0
-	offset_right = 180.0
-	offset_bottom = 220.0
-	grow_horizontal = 2
-	grow_vertical = 2
+	anchors_preset = 0
+	anchor_left = 0.0
+	anchor_top = 0.0
+	anchor_right = 0.0
+	anchor_bottom = 0.0
+	position = Vector2(180.0, 180.0)
+	size = Vector2(360.0, 440.0)
 	mouse_filter = Control.MOUSE_FILTER_STOP  # 阻止事件传递到背景
 	
 	vbox = VBoxContainer.new()
@@ -183,65 +180,88 @@ func _create_popup_content():
 	max_level_label.add_theme_color_override("font_color", Color(0.5, 0.18, 0.16, 1))
 	max_level_label.visible = false
 	vbox.add_child(max_level_label)
-	
-	var use_count_container = HBoxContainer.new()
-	use_count_container.name = "UseCountContainer"
-	use_count_container.alignment = BoxContainer.ALIGNMENT_BEGIN
-	use_count_container.add_theme_constant_override("separation", 8)
-	vbox.add_child(use_count_container)
-	
+
+	var upgrade_conditions_box = VBoxContainer.new()
+	upgrade_conditions_box.name = "UpgradeConditionsBox"
+	upgrade_conditions_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	upgrade_conditions_box.add_theme_constant_override("separation", 8)
+	vbox.add_child(upgrade_conditions_box)
+
+	var use_count_row = HBoxContainer.new()
+	use_count_row.name = "UseCountRow"
+	use_count_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	use_count_row.add_theme_constant_override("separation", 16)
+	upgrade_conditions_box.add_child(use_count_row)
+
 	var use_count_label = Label.new()
 	use_count_label.name = "UseCountLabel"
 	use_count_label.text = "使用次数："
-	use_count_label.custom_minimum_size = Vector2(106, 0)
+	use_count_label.custom_minimum_size = Vector2(120, 0)
 	use_count_label.add_theme_font_size_override("font_size", 19)
 	use_count_label.add_theme_color_override("font_color", Color(0.24, 0.22, 0.19, 1))
-	use_count_container.add_child(use_count_label)
-	
+	use_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	use_count_row.add_child(use_count_label)
+
 	var use_count_value_label = Label.new()
 	use_count_value_label.name = "UseCountValueLabel"
-	use_count_value_label.text = "0/0"
+	use_count_value_label.text = "0 / 0"
+	use_count_value_label.custom_minimum_size = Vector2(72, 0)
 	use_count_value_label.add_theme_font_size_override("font_size", 19)
 	use_count_value_label.add_theme_color_override("font_color", Color(0.24, 0.22, 0.19, 1))
-	use_count_container.add_child(use_count_value_label)
-	
-	# 灵气充入容器
-	var spirit_charge_container = HBoxContainer.new()
-	spirit_charge_container.name = "SpiritChargeContainer"
-	spirit_charge_container.alignment = BoxContainer.ALIGNMENT_BEGIN
-	spirit_charge_container.add_theme_constant_override("separation", 8)
-	vbox.add_child(spirit_charge_container)
-	
+	use_count_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	use_count_row.add_child(use_count_value_label)
+
+	var use_count_empty_container = Control.new()
+	use_count_empty_container.name = "UseCountEmptyContainer"
+	use_count_empty_container.custom_minimum_size = Vector2(118, 0)
+	use_count_row.add_child(use_count_empty_container)
+
+	var spirit_charge_row = HBoxContainer.new()
+	spirit_charge_row.name = "SpiritChargeRow"
+	spirit_charge_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	spirit_charge_row.add_theme_constant_override("separation", 16)
+	upgrade_conditions_box.add_child(spirit_charge_row)
+
 	var spirit_charge_label = Label.new()
 	spirit_charge_label.name = "SpiritChargeLabel"
 	spirit_charge_label.text = "所需灵气："
-	spirit_charge_label.custom_minimum_size = Vector2(106, 0)
+	spirit_charge_label.custom_minimum_size = Vector2(120, 0)
 	spirit_charge_label.add_theme_font_size_override("font_size", 19)
 	spirit_charge_label.add_theme_color_override("font_color", Color(0.24, 0.22, 0.19, 1))
-	spirit_charge_container.add_child(spirit_charge_label)
-	
+	spirit_charge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spirit_charge_row.add_child(spirit_charge_label)
+
 	var spirit_amount_label = Label.new()
 	spirit_amount_label.name = "SpiritAmountLabel"
-	spirit_amount_label.text = "0/0"
+	spirit_amount_label.text = "0 / 0"
+	spirit_amount_label.custom_minimum_size = Vector2(72, 0)
 	spirit_amount_label.add_theme_font_size_override("font_size", 19)
 	spirit_amount_label.add_theme_color_override("font_color", Color(0.24, 0.22, 0.19, 1))
-	spirit_charge_container.add_child(spirit_amount_label)
-	
+	spirit_amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spirit_charge_row.add_child(spirit_amount_label)
+
+	var spirit_action_container = HBoxContainer.new()
+	spirit_action_container.name = "SpiritActionContainer"
+	spirit_action_container.custom_minimum_size = Vector2(118, 0)
+	spirit_action_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	spirit_action_container.add_theme_constant_override("separation", 8)
+	spirit_charge_row.add_child(spirit_action_container)
+
 	charge_button = Button.new()
 	charge_button.name = "ChargeButton"
 	charge_button.text = "+"
-	charge_button.custom_minimum_size = Vector2(58, 42)
+	charge_button.custom_minimum_size = Vector2(48, 42)
 	charge_button.add_theme_font_size_override("font_size", 24)
 	charge_button.pressed.connect(func(): charge_requested.emit())
-	spirit_charge_container.add_child(charge_button)
-	
+	spirit_action_container.add_child(charge_button)
+
 	multiplier_button = Button.new()
 	multiplier_button.name = "MultiplierButton"
 	multiplier_button.text = "x10"
-	multiplier_button.custom_minimum_size = Vector2(84, 42)
+	multiplier_button.custom_minimum_size = Vector2(62, 42)
 	multiplier_button.add_theme_font_size_override("font_size", 22)
 	multiplier_button.pressed.connect(func(): multiplier_changed.emit())
-	spirit_charge_container.add_child(multiplier_button)
+	spirit_action_container.add_child(multiplier_button)
 	
 	# 轻量留白（避免使用 EXPAND_FILL 把弹窗高度异常撑大）
 	vbox.add_child(_create_section_gap(8))
@@ -306,16 +326,16 @@ func _update_popup_layout():
 	if not vbox:
 		return
 	# 基于内容和屏幕动态计算弹窗尺寸，避免写死宽高导致比例异常
-	var viewport_size = get_viewport_rect().size
+	var safe_rect := SafeAreaHelper.get_safe_inner_rect(self)
+	var viewport_size = safe_rect.size
 	var content_min_size = vbox.get_combined_minimum_size()
 	var popup_width = clamp(content_min_size.x + 40.0, 360.0, max(360.0, viewport_size.x - 40.0))
 	# 高度上限按屏幕 82%，并且不让无意义留白撑高
 	var max_height = max(420.0, floor(viewport_size.y * 0.82))
 	var popup_height = clamp(content_min_size.y + 34.0, 420.0, max_height)
-	offset_left = -popup_width * 0.5
-	offset_top = -popup_height * 0.5
-	offset_right = popup_width * 0.5
-	offset_bottom = popup_height * 0.5
+	var popup_pos := safe_rect.position + (safe_rect.size - Vector2(popup_width, popup_height)) * 0.5
+	position = popup_pos
+	size = Vector2(popup_width, popup_height)
 
 func hide_popup():
 	"""隐藏弹窗"""
@@ -351,7 +371,7 @@ func update_content(spell_info: Dictionary, spell_config: Dictionary,
 	if level_label:
 		var current_level = int(spell_info.get("level", 0))
 		var max_level = int(spell_config.get("max_level", 3))
-		level_label.text = "等级：%s（%d/%d）" % [_format_level_tier_name(current_level), current_level, max_level]
+		level_label.text = "等级：%s（%d / %d）" % [_format_level_tier_name(current_level), current_level, max_level]
 	
 	# 获取当前等级数据
 	var current_level = spell_info.get("level", 0)
@@ -402,9 +422,10 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 								multiplier_index: int, multipliers: Array):
 	"""更新升级条件显示"""
 	var max_level_label = vbox.get_node_or_null("MaxLevelLabel")
-	var use_count_container = vbox.get_node_or_null("UseCountContainer")
-	var use_count_value_label = vbox.get_node_or_null("UseCountContainer/UseCountValueLabel")
-	var spirit_charge_container = vbox.get_node_or_null("SpiritChargeContainer")
+	var use_count_container = vbox.get_node_or_null("UseCountRow")
+	var use_count_value_label = vbox.get_node_or_null("UseCountRow/UseCountValueLabel")
+	var spirit_charge_container = vbox.get_node_or_null("SpiritChargeRow")
+	var spirit_action_container = vbox.get_node_or_null("SpiritActionContainer")
 	
 	var current_level = spell_info.get("level", 0)
 	var max_level = int(spell_config.get("max_level", 3))
@@ -415,12 +436,14 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 		if use_count_container:
 			use_count_container.visible = true
 		if use_count_value_label:
-			use_count_value_label.text = "-/-"
+			use_count_value_label.text = "- / -"
 		if spirit_charge_container:
 			spirit_charge_container.visible = true
-			var spirit_amount_label = spirit_charge_container.get_node_or_null("SpiritAmountLabel")
+			var spirit_amount_label = vbox.get_node_or_null("SpiritChargeRow/SpiritAmountLabel")
 			if spirit_amount_label:
-				spirit_amount_label.text = "-/-"
+				spirit_amount_label.text = "- / -"
+		if spirit_action_container:
+			spirit_action_container.visible = true
 		_set_buttons_enabled(false, multiplier_index)
 	elif current_level >= max_level:
 		if max_level_label:
@@ -429,6 +452,8 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 			use_count_container.visible = false
 		if spirit_charge_container:
 			spirit_charge_container.visible = false
+		if spirit_action_container:
+			spirit_action_container.visible = false
 		_set_buttons_enabled(false, multiplier_index)
 	else:
 		if max_level_label:
@@ -437,6 +462,8 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 			use_count_container.visible = true
 		if spirit_charge_container:
 			spirit_charge_container.visible = true
+		if spirit_action_container:
+			spirit_action_container.visible = true
 		
 		var current_level_data = spell_data.get_spell_level_data(spell_info.get("id", ""), current_level) if spell_data else {}
 		var use_count_required = int(current_level_data.get("use_count_required", 0))
@@ -444,11 +471,11 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 		var charged_spirit = int(spell_info.get("charged_spirit", 0))
 		
 		if use_count_value_label:
-			use_count_value_label.text = UIUtils.format_display_number(float(spell_info.get("use_count", 0))) + "/" + UIUtils.format_display_number(float(use_count_required))
+			use_count_value_label.text = UIUtils.format_display_number(float(spell_info.get("use_count", 0))) + " / " + UIUtils.format_display_number(float(use_count_required))
 		if spirit_charge_container:
-			var spirit_amount_label = spirit_charge_container.get_node_or_null("SpiritAmountLabel")
+			var spirit_amount_label = vbox.get_node_or_null("SpiritChargeRow/SpiritAmountLabel")
 			if spirit_amount_label:
-				spirit_amount_label.text = UIUtils.format_display_number(float(charged_spirit)) + "/" + UIUtils.format_display_number(float(spirit_cost))
+				spirit_amount_label.text = UIUtils.format_display_number(float(charged_spirit)) + " / " + UIUtils.format_display_number(float(spirit_cost))
 		
 		_set_buttons_enabled(true, multiplier_index)
 
@@ -477,7 +504,7 @@ func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spe
 		if max_level_label:
 			max_level_label.visible = false
 		use_count_container.visible = true
-		use_count_value_label.text = "-/-"
+		use_count_value_label.text = "- / -"
 	elif current_level >= max_level:
 		if max_level_label:
 			max_level_label.visible = true
@@ -488,7 +515,7 @@ func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spe
 		use_count_container.visible = true
 		var current_level_data = spell_data.get_spell_level_data(spell_info.get("id", ""), current_level) if spell_data else {}
 		var use_count_required = int(current_level_data.get("use_count_required", 0))
-		use_count_value_label.text = UIUtils.format_display_number(float(spell_info.get("use_count", 0))) + "/" + UIUtils.format_display_number(float(use_count_required))
+		use_count_value_label.text = UIUtils.format_display_number(float(spell_info.get("use_count", 0))) + " / " + UIUtils.format_display_number(float(use_count_required))
 	
 	use_count_value_label.queue_redraw()
 	

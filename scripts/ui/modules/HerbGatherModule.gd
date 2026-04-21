@@ -94,7 +94,7 @@ func _format_drops_preview(drops: Array) -> String:
 			int(drop.get("max", 0)),
 			chance
 		])
-	return "，".join(parts)
+	return "、".join(parts)
 
 func _format_seconds_text(value: float) -> String:
 	return UIUtils.format_decimal(value, 1) + "秒"
@@ -163,7 +163,7 @@ func _drop_map_to_text(drops: Dictionary) -> String:
 	var parts: Array = []
 	for item_id in ids:
 		parts.append("%s x%d" % [_get_item_name(item_id), int(drops[item_id])])
-	return "，".join(parts)
+	return "、".join(parts)
 
 func _report_log_message(result: Dictionary):
 	var drops = result.get("drops_gained", {})

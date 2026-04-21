@@ -74,7 +74,7 @@ func _get_spell_result_text(result: Dictionary, fallback: String) -> String:
 		"SPELL_UNEQUIP_SUCCEEDED":
 			return spell_name + "卸下成功"
 		"SPELL_UPGRADE_SUCCEEDED":
-			return "%s升级成功，达到Lv.%d" % [spell_name, int(reason_data.get("new_level", 0))]
+			return "%s升级成功，达到Lv.%s" % [spell_name, UIUtils.format_display_number_integer(float(reason_data.get("new_level", 0)))]
 		"SPELL_CHARGE_SUCCEEDED":
 			return "%s充灵成功，注入灵气%d" % [spell_name, int(reason_data.get("charged_amount", 0))]
 		"SPELL_SLOT_LIMIT_REACHED":
@@ -98,13 +98,13 @@ func _get_spell_result_text(result: Dictionary, fallback: String) -> String:
 		"SPELL_UPGRADE_AT_MAX_LEVEL", "SPELL_CHARGE_AT_MAX_LEVEL":
 			return "术法【%s】已达到最高等级" % spell_name
 		"SPELL_UPGRADE_USE_COUNT_INSUFFICIENT":
-			return "术法【%s】使用次数不足（%d/%d）" % [
+			return "术法【%s】使用次数不足（%d / %d）" % [
 				spell_name,
 				int(reason_data.get("current_use_count", 0)),
 				int(reason_data.get("required_use_count", 0))
 			]
 		"SPELL_UPGRADE_CHARGED_SPIRIT_INSUFFICIENT":
-			return "术法【%s】充灵不足（%d/%d）" % [
+			return "术法【%s】充灵不足（%d / %d）" % [
 				spell_name,
 				int(reason_data.get("current_charged_spirit", 0)),
 				int(reason_data.get("required_charged_spirit", 0))
@@ -239,9 +239,13 @@ func update_spell_ui():
 			spells_by_type[type_str] = []
 		spells_by_type[type_str].append({"id": spell_id, "info": info, "data": spells[spell_id]})
 	
+	var visible_type_keys: Array = []
 	for type_key in TYPE_ORDER:
-		if not spells_by_type.has(type_key) or spells_by_type[type_key].is_empty():
-			continue
+		if spells_by_type.has(type_key) and not spells_by_type[type_key].is_empty():
+			visible_type_keys.append(type_key)
+	
+	for index in range(visible_type_keys.size()):
+		var type_key = str(visible_type_keys[index])
 		
 		var limit = spell_data.get_equipment_limit(type_key) if spell_data else 1
 		var equipped_count = spell_system.get_equipped_count(type_key) if spell_system else 0
@@ -250,7 +254,7 @@ func update_spell_ui():
 		if limit < 0:
 			type_label.text = TYPE_NAMES.get(type_key, type_key)
 		else:
-			type_label.text = TYPE_NAMES.get(type_key, type_key) + " " + str(equipped_count) + "/" + str(limit)
+			type_label.text = TYPE_NAMES.get(type_key, type_key) + " " + UIUtils.format_display_number_integer(float(equipped_count)) + " / " + UIUtils.format_display_number_integer(float(limit))
 		type_label.add_theme_font_size_override("font_size", 18)
 		type_label.add_theme_color_override("font_color", Color(0.2, 0.2, 0.2))
 		main_vbox.add_child(type_label)
@@ -269,9 +273,10 @@ func update_spell_ui():
 			grid.add_child(card)
 			spell_cards[spell_id] = card
 		
-		var separator = HSeparator.new()
-		separator.custom_minimum_size = Vector2(0, 20)
-		main_vbox.add_child(separator)
+		if index < visible_type_keys.size() - 1:
+			var separator = HSeparator.new()
+			separator.custom_minimum_size = Vector2(0, 20)
+			main_vbox.add_child(separator)
 	
 	if was_popup_visible and not was_viewing_spell.is_empty() and spell_cards.has(was_viewing_spell):
 		_show_spell_detail(was_viewing_spell)

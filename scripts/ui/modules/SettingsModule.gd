@@ -1,6 +1,7 @@
 class_name SettingsModule extends Node
 
 const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const UIIconProvider = preload("res://scripts/ui/common/UIIconProvider.gd")
 const SETTINGS_SAVE_PATH := "user://settings.cfg"
 const DEFAULT_FPS_LIMIT := 60
 const DEFAULT_MUSIC_VOLUME := 0.8
@@ -37,6 +38,7 @@ var back_button: Button = null
 var _music_bus_name: String = "Master"
 var _is_music_muted: bool = false
 var _last_music_linear_volume: float = DEFAULT_MUSIC_VOLUME
+var _music_mute_icon_rect: TextureRect = null
 
 func _get_logout_result_text(result: Dictionary, fallback: String = "登出失败") -> String:
 	var reason_code = str(result.get("reason_code", ""))
@@ -60,6 +62,39 @@ func initialize(ui: Node, player_node: Node, game_api: Node = null):
 	_style_rank_back_button()
 	if save_button:
 		save_button.visible = false
+
+func _ensure_mute_button_icon():
+	if not music_mute_button:
+		return
+	music_mute_button.text = ""
+	if _music_mute_icon_rect and is_instance_valid(_music_mute_icon_rect):
+		return
+	var icon_rect := TextureRect.new()
+	icon_rect.name = "MuteIcon"
+	icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.custom_minimum_size = Vector2(24, 24)
+	icon_rect.layout_mode = 1
+	icon_rect.anchors_preset = 8
+	icon_rect.anchor_left = 0.5
+	icon_rect.anchor_top = 0.5
+	icon_rect.anchor_right = 0.5
+	icon_rect.anchor_bottom = 0.5
+	icon_rect.offset_left = -12.0
+	icon_rect.offset_top = -12.0
+	icon_rect.offset_right = 12.0
+	icon_rect.offset_bottom = 12.0
+	music_mute_button.add_child(icon_rect)
+	_music_mute_icon_rect = icon_rect
+
+func _refresh_mute_button_icon():
+	_ensure_mute_button_icon()
+	if not _music_mute_icon_rect:
+		return
+	_music_mute_icon_rect.texture = UIIconProvider.load_svg_texture(
+		UIIconProvider.ICON_AUDIO_OFF if _is_music_muted else UIIconProvider.ICON_AUDIO_ON
+	)
 
 func _style_rank_back_button():
 	if not back_button:
@@ -169,7 +204,7 @@ func _sync_audio_controls_from_state():
 		music_volume_slider.set_value_no_signal(_last_music_linear_volume)
 	_update_music_volume_label()
 	if music_mute_button:
-		music_mute_button.text = "静音" if _is_music_muted else "开音"
+		_refresh_mute_button_icon()
 	_apply_music_volume_to_bus()
 
 func _update_music_volume_label():
@@ -254,7 +289,7 @@ func _on_fps_preset_pressed(fps_limit: int):
 func _on_music_mute_toggled():
 	_is_music_muted = not _is_music_muted
 	if music_mute_button:
-		music_mute_button.text = "静音" if _is_music_muted else "开音"
+		_refresh_mute_button_icon()
 	_apply_music_volume_to_bus()
 	_save_local_settings()
 
@@ -263,7 +298,7 @@ func _on_music_volume_changed(value: float):
 	if _is_music_muted and _last_music_linear_volume > 0.0:
 		_is_music_muted = false
 		if music_mute_button:
-			music_mute_button.text = "开音"
+			_refresh_mute_button_icon()
 	_update_music_volume_label()
 	_apply_music_volume_to_bus()
 	_save_local_settings()
@@ -434,7 +469,7 @@ func _create_rank_item(rank_data: Dictionary) -> HBoxContainer:
 	realm_label.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
 	item.add_child(realm_label)
 	var spirit_label = Label.new()
-	spirit_label.text = UIUtils.format_number(int(rank_data.get("spirit_energy", 0)))
+	spirit_label.text = UIUtils.format_display_number(float(rank_data.get("spirit_energy", 0)))
 	spirit_label.size_flags_horizontal = Control.SIZE_EXPAND
 	spirit_label.size_flags_stretch_ratio = 15.0
 	spirit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
