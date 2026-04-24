@@ -28,7 +28,7 @@
   - `core/*/` 子目录：背包、术法、炼丹、历练、境界等配置与状态容器。
 - `utils/`
   - `utils/flow/ActionLockManager.gd`：统一的短时动作锁，避免连点并发。
-  - `ui_utils.gd`：少量 UI 辅助函数。
+  - `UIUtils.gd`：少量 UI 辅助函数。
 
 ### `scenes/`
 

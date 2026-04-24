@@ -1,8 +1,8 @@
 extends Control
 
-const GameServerAPI = preload("res://scripts/network/GameServerAPI.gd")
-const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
-const UIFontProvider = preload("res://scripts/ui/common/UIFontProvider.gd")
+const GAME_SERVER_API_SCRIPT = preload("res://scripts/network/GameServerAPI.gd")
+const SERVER_CONFIG_SCRIPT = preload("res://scripts/network/ServerConfig.gd")
+const UI_FONT_PROVIDER = preload("res://scripts/ui/common/UIFontProvider.gd")
 
 var api: GameServerAPI = null
 
@@ -49,8 +49,8 @@ func _get_register_result_text(result: Dictionary, fallback: String = "注册失
 			return api.network_manager.get_api_error_text_for_ui(result, fallback)
 
 func _ready():
-	UIFontProvider.apply_to_root(self)
-	api = GameServerAPI.new()
+	UI_FONT_PROVIDER.apply_to_root(self)
+	api = GAME_SERVER_API_SCRIPT.new()
 	add_child(api)
 	
 	# 连接信号
@@ -59,7 +59,7 @@ func _ready():
 	server_ip_confirm_button.pressed.connect(_on_server_ip_confirm_pressed)
 	
 	# 设置默认服务器IP
-	server_ip_input.text = ServerConfig.get_api_base()
+	server_ip_input.text = SERVER_CONFIG_SCRIPT.get_api_base()
 	
 	# 检查自动登录
 	check_auto_login()
@@ -185,12 +185,12 @@ func _apply_game_data(data: Dictionary):
 	var lianli_system = game_manager.get_lianli_system() if game_manager.has_method("get_lianli_system") else null
 	var alchemy_system = game_manager.get_alchemy_system() if game_manager.has_method("get_alchemy_system") else null
 
+	if spell_system and data.has("spell_system"):
+		spell_system.apply_save_data(data.spell_system)
 	if player and data.has("player"):
 		player.apply_save_data(data.player)
 	if inventory and data.has("inventory"):
 		inventory.apply_save_data(data.inventory)
-	if spell_system and data.has("spell_system"):
-		spell_system.apply_save_data(data.spell_system)
 	if lianli_system and data.has("lianli_system"):
 		lianli_system.apply_save_data(data.lianli_system)
 	if alchemy_system and data.has("alchemy_system"):
@@ -258,5 +258,5 @@ func _on_server_ip_confirm_pressed():
 		return
 	
 	# 保存服务器IP
-	ServerConfig.set_api_base(server_ip)
+	SERVER_CONFIG_SCRIPT.set_api_base(server_ip)
 	show_message("服务器IP设置成功")

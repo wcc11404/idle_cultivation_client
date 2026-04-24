@@ -2,7 +2,7 @@ extends Node
 
 class_name NetworkManager
 
-const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
+const SERVER_CONFIG_SCRIPT = preload("res://scripts/network/ServerConfig.gd")
 
 const NETWORK_FAILURE_LOGOUT_THRESHOLD := 3
 const TECHNICAL_ERROR_UI_THROTTLE_SECONDS := 2.0
@@ -18,13 +18,13 @@ func _ready():
 
 func save_token(token: String):
 	current_token = token
-	var file = FileAccess.open(ServerConfig.TOKEN_FILE, FileAccess.WRITE)
+	var file = FileAccess.open(SERVER_CONFIG_SCRIPT.TOKEN_FILE, FileAccess.WRITE)
 	file.store_string(token)
 	file.close()
 
 func load_token() -> bool:
-	if FileAccess.file_exists(ServerConfig.TOKEN_FILE):
-		var file = FileAccess.open(ServerConfig.TOKEN_FILE, FileAccess.READ)
+	if FileAccess.file_exists(SERVER_CONFIG_SCRIPT.TOKEN_FILE):
+		var file = FileAccess.open(SERVER_CONFIG_SCRIPT.TOKEN_FILE, FileAccess.READ)
 		current_token = file.get_as_text()
 		if current_token.is_empty():
 			return false
@@ -33,8 +33,8 @@ func load_token() -> bool:
 
 func clear_token():
 	current_token = ""
-	if FileAccess.file_exists(ServerConfig.TOKEN_FILE):
-		DirAccess.remove_absolute(ServerConfig.TOKEN_FILE)
+	if FileAccess.file_exists(SERVER_CONFIG_SCRIPT.TOKEN_FILE):
+		DirAccess.remove_absolute(SERVER_CONFIG_SCRIPT.TOKEN_FILE)
 
 func request(method: String, endpoint: String, body: Dictionary = {}, options: Dictionary = {}) -> Dictionary:
 	var retry_count: int = int(options.get("retry_count", 0))
@@ -95,10 +95,10 @@ func _build_request_body(method: String, endpoint: String, body: Dictionary) -> 
 
 func _request_once(method: String, endpoint: String, body: Dictionary = {}) -> Dictionary:
 	var http := HTTPRequest.new()
-	http.timeout = ServerConfig.REQUEST_TIMEOUT
+	http.timeout = SERVER_CONFIG_SCRIPT.REQUEST_TIMEOUT
 	add_child(http)
 
-	var url = ServerConfig.get_api_base() + endpoint
+	var url = SERVER_CONFIG_SCRIPT.get_api_base() + endpoint
 	var headers = ["Content-Type: application/json"]
 	if current_token:
 		headers.append("Authorization: Bearer " + current_token)

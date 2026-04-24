@@ -36,14 +36,14 @@ export GODOT_TEST_HOME="$(pwd)/.godot_test_home"
 ```text
 tests_gut/
 ├── fixtures/
-│   └── fixture_helper.gd        # 通用断言/日志/背包辅助
+│   └── FixtureHelper.gd        # 通用断言/日志/背包辅助
 ├── support/
-│   ├── module_harness.gd        # 主界面与模块测试基座
-│   ├── server_state_adapter.gd  # 服务端状态同步辅助
-│   ├── server_client.gd         # 测试账号与 /api/test/* 调用封装
-│   └── session_helper.gd        # 本地 token / server_config 清理
+│   ├── ModuleHarness.gd        # 主界面与模块测试基座
+│   ├── ServerStateAdapter.gd  # 服务端状态同步辅助
+│   ├── ServerClient.gd             # 测试账号与 /api/test/* 调用封装
+│   └── SessionHelper.gd            # 本地 token / server_config 清理
 ├── integration/
-│   └── test_module_api_smoke.gd # 跨模块 smoke
+│   └── TestModuleApiSmoke.gd # 跨模块 smoke
 └── unit/
     └── ui/                      # 模块级 API 集成测试
 ```
@@ -94,8 +94,8 @@ HOME="$(pwd)/.godot_test_home" \
 
 纯工具类和静态数据类测试仍保留，例如：
 
-- `unit/core/test_log_manager.gd`
-- `unit/core/test_attribute_calculator.gd`
+- `unit/core/TestLogManager.gd`
+- `unit/core/TestAttributeCalculator.gd`
 - `unit/data/*`
 
 这些测试只用于验证客户端内部工具或静态配置，不承担业务真值判定。

@@ -21,7 +21,7 @@
 
 ## 数值显示格式契约
 
-- 客户端统一优先使用 `res://scripts/utils/ui_utils.gd` 内的格式化函数，不在模块内直接手写 `str(...) / %d / %.2f` 来拼主要业务数值。
+- 客户端统一优先使用 `res://scripts/utils/UIUtils.gd` 内的格式化函数，不在模块内直接手写 `str(...) / %d / %.2f` 来拼主要业务数值。
 - 当前全局有两套正式口径：
   - `UIUtils.format_display_number(...)`
     - `<1000`：保留两位小数并去尾零

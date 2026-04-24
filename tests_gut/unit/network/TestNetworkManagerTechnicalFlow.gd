@@ -1,6 +1,6 @@
 extends GutTest
 
-const NetworkManager = preload("res://scripts/network/NetworkManager.gd")
+const NETWORK_MANAGER_SCRIPT = preload("res://scripts/network/NetworkManager.gd")
 
 class MockNetworkManager:
 	extends NetworkManager

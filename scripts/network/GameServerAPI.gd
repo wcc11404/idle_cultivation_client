@@ -7,8 +7,8 @@ var network_manager = null
 func _ready():
 	network_manager = get_node_or_null("/root/GlobalNetworkManager")
 	if not network_manager:
-		const NetworkManager = preload("res://scripts/network/NetworkManager.gd")
-		network_manager = NetworkManager.new()
+		const NETWORK_MANAGER_SCRIPT = preload("res://scripts/network/NetworkManager.gd")
+		network_manager = NETWORK_MANAGER_SCRIPT.new()
 		add_child(network_manager)
 
 func _critical_options(

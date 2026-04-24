@@ -8,7 +8,7 @@ var include_subdirectories = true
 
 # 测试文件后缀
 var suffix = ".gd"
-var prefix = "test_"
+var prefix = "Test"
 
 # 输出设置
 var log_level = 1  # 0=error, 1=warning, 2=info, 3=debug

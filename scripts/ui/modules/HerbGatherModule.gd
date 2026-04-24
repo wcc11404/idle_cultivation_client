@@ -1,8 +1,8 @@
 class_name HerbGatherModule
 extends Node
 
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
-const SpellThumbnailTemplate = preload("res://scripts/ui/common/SpellThumbnailTemplate.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const SPELL_THUMBNAIL_TEMPLATE = preload("res://scripts/ui/common/SpellThumbnailTemplate.gd")
 
 signal log_message(message: String)
 signal back_to_region_requested
@@ -60,7 +60,7 @@ func _setup_back_button_style():
 		return
 	back_button.text = "< 返回"
 	back_button.custom_minimum_size = Vector2(96, 40)
-	ActionButtonTemplate.apply_light_neutral(back_button, back_button.custom_minimum_size, 20)
+	ACTION_BUTTON_TEMPLATE.apply_light_neutral(back_button, back_button.custom_minimum_size, 20)
 
 func show_tab():
 	if herb_gather_panel:
@@ -193,7 +193,7 @@ func _render_cards():
 		var card = PanelContainer.new()
 		card.custom_minimum_size = Vector2(0, 210)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		SpellThumbnailTemplate.apply_to_card(card)
+		SPELL_THUMBNAIL_TEMPLATE.apply_to_card(card)
 
 		var margin = MarginContainer.new()
 		margin.add_theme_constant_override("margin_left", 16)
@@ -243,13 +243,13 @@ func _render_cards():
 
 		var start_button = Button.new()
 		start_button.text = "开始采集"
-		ActionButtonTemplate.apply_alchemy_green(start_button, Vector2(130, 42), 18)
+		ACTION_BUTTON_TEMPLATE.apply_alchemy_green(start_button, Vector2(130, 42), 18)
 		start_button.pressed.connect(_on_start_pressed.bind(point_id))
 		actions.add_child(start_button)
 
 		var stop_button = Button.new()
 		stop_button.text = "停止采集"
-		ActionButtonTemplate.apply_breakthrough_red(stop_button, Vector2(130, 42), 18)
+		ACTION_BUTTON_TEMPLATE.apply_breakthrough_red(stop_button, Vector2(130, 42), 18)
 		stop_button.pressed.connect(_on_stop_pressed)
 		actions.add_child(stop_button)
 

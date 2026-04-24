@@ -1,9 +1,9 @@
 extends Node
 
-class_name TestServerClient
+class_name ServerClient
 
-const GameServerAPI = preload("res://scripts/network/GameServerAPI.gd")
-const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
+const GAME_SERVER_API_SCRIPT = preload("res://scripts/network/GameServerAPI.gd")
+const SERVER_CONFIG_SCRIPT = preload("res://scripts/network/ServerConfig.gd")
 
 const DEFAULT_USERNAME := "test"
 const DEFAULT_PASSWORD := "test123"
@@ -16,13 +16,13 @@ func ensure_ready() -> void:
 	if api and is_instance_valid(api):
 		network_manager = api.network_manager
 		return
-	api = GameServerAPI.new()
+	api = GAME_SERVER_API_SCRIPT.new()
 	add_child(api)
 	await get_tree().process_frame
 	network_manager = api.network_manager
 
-func configure(api_base: String = ServerConfig.DEFAULT_API_BASE) -> void:
-	ServerConfig.set_api_base(api_base)
+func configure(api_base: String = SERVER_CONFIG_SCRIPT.DEFAULT_API_BASE) -> void:
+	SERVER_CONFIG_SCRIPT.set_api_base(api_base)
 	await ensure_ready()
 	if network_manager and network_manager.has_method("load_token"):
 		network_manager.load_token()

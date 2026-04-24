@@ -1,8 +1,8 @@
 class_name SpellDetailPopup extends Panel
 
-const PopupStyleTemplate = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
-const SafeAreaHelper = preload("res://scripts/ui/common/SafeAreaHelper.gd")
+const POPUP_STYLE_TEMPLATE = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const SAFE_AREA_HELPER = preload("res://scripts/ui/common/SafeAreaHelper.gd")
 
 ## 术法详情弹窗 - 独立管理弹窗UI
 ## 负责显示术法详细信息、升级条件、充灵操作等
@@ -49,7 +49,7 @@ func _create_background():
 	"""创建背景遮罩层"""
 	if not overlay_host:
 		return
-	background = PopupStyleTemplate.create_overlay(self, Callable(), 0.62)
+	background = POPUP_STYLE_TEMPLATE.create_overlay(self, Callable(), 0.62)
 	background.name = "SpellPopupBackground"
 	overlay_host.add_child(background)
 
@@ -290,9 +290,9 @@ func _create_popup_content():
 	button_container.add_child(close_button)
 
 func _apply_popup_theme():
-	add_theme_stylebox_override("panel", PopupStyleTemplate.build_panel_style({
-		"bg_color": PopupStyleTemplate.POPUP_BG_COLOR,
-		"border_color": PopupStyleTemplate.POPUP_BORDER_COLOR,
+	add_theme_stylebox_override("panel", POPUP_STYLE_TEMPLATE.build_panel_style({
+		"bg_color": POPUP_STYLE_TEMPLATE.POPUP_BG_COLOR,
+		"border_color": POPUP_STYLE_TEMPLATE.POPUP_BORDER_COLOR,
 		"corner_radius": 12,
 		"border_width": 2
 	}))
@@ -300,13 +300,13 @@ func _apply_popup_theme():
 
 func _apply_action_button_styles():
 	if charge_button:
-		ActionButtonTemplate.apply_spell_view_brown(charge_button, charge_button.custom_minimum_size, 24)
+		ACTION_BUTTON_TEMPLATE.apply_spell_view_brown(charge_button, charge_button.custom_minimum_size, 24)
 	if multiplier_button:
-		ActionButtonTemplate.apply_spell_view_brown(multiplier_button, multiplier_button.custom_minimum_size, 22)
+		ACTION_BUTTON_TEMPLATE.apply_spell_view_brown(multiplier_button, multiplier_button.custom_minimum_size, 22)
 	if upgrade_button:
-		ActionButtonTemplate.apply_cultivation_yellow(upgrade_button, upgrade_button.custom_minimum_size, 22)
+		ACTION_BUTTON_TEMPLATE.apply_cultivation_yellow(upgrade_button, upgrade_button.custom_minimum_size, 22)
 	if close_button:
-		ActionButtonTemplate.apply_breakthrough_red(close_button, close_button.custom_minimum_size, 22)
+		ACTION_BUTTON_TEMPLATE.apply_breakthrough_red(close_button, close_button.custom_minimum_size, 22)
 
 func show_popup():
 	"""显示弹窗"""
@@ -326,7 +326,7 @@ func _update_popup_layout():
 	if not vbox:
 		return
 	# 基于内容和屏幕动态计算弹窗尺寸，避免写死宽高导致比例异常
-	var safe_rect := SafeAreaHelper.get_safe_inner_rect(self)
+	var safe_rect := SAFE_AREA_HELPER.get_safe_inner_rect(self)
 	var viewport_size = safe_rect.size
 	var content_min_size = vbox.get_combined_minimum_size()
 	var popup_width = clamp(content_min_size.x + 40.0, 360.0, max(360.0, viewport_size.x - 40.0))
@@ -353,6 +353,8 @@ func update_content(spell_info: Dictionary, spell_config: Dictionary,
 	"""更新弹窗内容"""
 	if not vbox:
 		return
+	var normalized_level := _get_normalized_level(spell_info)
+	var is_obtained := _is_spell_obtained(spell_info)
 	
 	# 更新标题
 	var title_label = vbox.get_node_or_null("TitleLabel")
@@ -369,15 +371,16 @@ func update_content(spell_info: Dictionary, spell_config: Dictionary,
 	# 更新等级
 	var level_label = vbox.get_node_or_null("LevelLabel")
 	if level_label:
-		var current_level = int(spell_info.get("level", 0))
 		var max_level = int(spell_config.get("max_level", 3))
-		level_label.text = "等级：%s（%d / %d）" % [_format_level_tier_name(current_level), current_level, max_level]
+		if is_obtained:
+			level_label.text = "等级：%s（%d / %d）" % [_format_level_tier_name(normalized_level), normalized_level, max_level]
+		else:
+			level_label.text = "等级：未解锁"
 	
 	# 获取当前等级数据
-	var current_level = spell_info.get("level", 0)
-	if current_level <= 0:
-		current_level = 1
-	var level_data = spell_data.get_spell_level_data(spell_info.get("id", ""), current_level) if spell_data else {}
+	var level_data = {}
+	if is_obtained:
+		level_data = spell_data.get_spell_level_data(str(spell_info.get("id", "")), normalized_level) if spell_data else {}
 	
 	# 更新属性加成
 	_update_attribute_value(level_data)
@@ -422,15 +425,16 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 								multiplier_index: int, multipliers: Array):
 	"""更新升级条件显示"""
 	var max_level_label = vbox.get_node_or_null("MaxLevelLabel")
-	var use_count_container = vbox.get_node_or_null("UseCountRow")
-	var use_count_value_label = vbox.get_node_or_null("UseCountRow/UseCountValueLabel")
-	var spirit_charge_container = vbox.get_node_or_null("SpiritChargeRow")
-	var spirit_action_container = vbox.get_node_or_null("SpiritActionContainer")
+	var use_count_container = vbox.get_node_or_null("UpgradeConditionsBox/UseCountRow")
+	var use_count_value_label = vbox.get_node_or_null("UpgradeConditionsBox/UseCountRow/UseCountValueLabel")
+	var spirit_charge_container = vbox.get_node_or_null("UpgradeConditionsBox/SpiritChargeRow")
+	var spirit_action_container = vbox.get_node_or_null("UpgradeConditionsBox/SpiritChargeRow/SpiritActionContainer")
 	
-	var current_level = spell_info.get("level", 0)
+	var current_level = _get_normalized_level(spell_info)
+	var is_obtained := _is_spell_obtained(spell_info)
 	var max_level = int(spell_config.get("max_level", 3))
 	
-	if current_level <= 0:
+	if not is_obtained:
 		if max_level_label:
 			max_level_label.visible = false
 		if use_count_container:
@@ -439,7 +443,7 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 			use_count_value_label.text = "- / -"
 		if spirit_charge_container:
 			spirit_charge_container.visible = true
-			var spirit_amount_label = vbox.get_node_or_null("SpiritChargeRow/SpiritAmountLabel")
+			var spirit_amount_label = vbox.get_node_or_null("UpgradeConditionsBox/SpiritChargeRow/SpiritAmountLabel")
 			if spirit_amount_label:
 				spirit_amount_label.text = "- / -"
 		if spirit_action_container:
@@ -465,7 +469,7 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 		if spirit_action_container:
 			spirit_action_container.visible = true
 		
-		var current_level_data = spell_data.get_spell_level_data(spell_info.get("id", ""), current_level) if spell_data else {}
+		var current_level_data = _get_spell_level_data_for_popup(spell_info, spell_config, spell_data, current_level)
 		var use_count_required = int(current_level_data.get("use_count_required", 0))
 		var spirit_cost = int(current_level_data.get("spirit_cost", 0))
 		var charged_spirit = int(spell_info.get("charged_spirit", 0))
@@ -473,7 +477,7 @@ func _update_upgrade_conditions(spell_info: Dictionary, spell_config: Dictionary
 		if use_count_value_label:
 			use_count_value_label.text = UIUtils.format_display_number(float(spell_info.get("use_count", 0))) + " / " + UIUtils.format_display_number(float(use_count_required))
 		if spirit_charge_container:
-			var spirit_amount_label = vbox.get_node_or_null("SpiritChargeRow/SpiritAmountLabel")
+			var spirit_amount_label = vbox.get_node_or_null("UpgradeConditionsBox/SpiritChargeRow/SpiritAmountLabel")
 			if spirit_amount_label:
 				spirit_amount_label.text = UIUtils.format_display_number(float(charged_spirit)) + " / " + UIUtils.format_display_number(float(spirit_cost))
 		
@@ -492,15 +496,16 @@ func _set_buttons_enabled(enabled: bool, multiplier_index: int):
 func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spell_data: Node):
 	"""只更新使用次数（用于实时更新）"""
 	var max_level_label = vbox.get_node_or_null("MaxLevelLabel")
-	var use_count_container = vbox.get_node_or_null("UseCountContainer")
-	var use_count_value_label = vbox.get_node_or_null("UseCountContainer/UseCountValueLabel")
+	var use_count_container = vbox.get_node_or_null("UpgradeConditionsBox/UseCountRow")
+	var use_count_value_label = vbox.get_node_or_null("UpgradeConditionsBox/UseCountRow/UseCountValueLabel")
 	if not use_count_container or not use_count_value_label:
 		return
 	
-	var current_level = spell_info.get("level", 0)
+	var current_level = _get_normalized_level(spell_info)
+	var is_obtained := _is_spell_obtained(spell_info)
 	var max_level = int(spell_config.get("max_level", 3))
 	
-	if current_level <= 0:
+	if not is_obtained:
 		if max_level_label:
 			max_level_label.visible = false
 		use_count_container.visible = true
@@ -513,7 +518,7 @@ func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spe
 		if max_level_label:
 			max_level_label.visible = false
 		use_count_container.visible = true
-		var current_level_data = spell_data.get_spell_level_data(spell_info.get("id", ""), current_level) if spell_data else {}
+		var current_level_data = _get_spell_level_data_for_popup(spell_info, spell_config, spell_data, current_level)
 		var use_count_required = int(current_level_data.get("use_count_required", 0))
 		use_count_value_label.text = UIUtils.format_display_number(float(spell_info.get("use_count", 0))) + " / " + UIUtils.format_display_number(float(use_count_required))
 	
@@ -521,6 +526,23 @@ func update_use_count_only(spell_info: Dictionary, spell_config: Dictionary, spe
 	
 	if current_level > 0 and current_level < max_level:
 		_set_buttons_enabled(true, 0)
+
+func _is_spell_obtained(spell_info: Dictionary) -> bool:
+	return bool(spell_info.get("obtained", false)) or int(spell_info.get("level", 0)) > 0
+
+func _get_normalized_level(spell_info: Dictionary) -> int:
+	var current_level := int(spell_info.get("level", 0))
+	if current_level <= 0 and _is_spell_obtained(spell_info):
+		return 1
+	return current_level
+
+func _get_spell_level_data_for_popup(spell_info: Dictionary, spell_config: Dictionary, spell_data: Node, level: int) -> Dictionary:
+	if not spell_data or level <= 0:
+		return {}
+	var spell_id := str(spell_config.get("id", spell_info.get("id", "")))
+	if spell_id.is_empty():
+		return {}
+	return spell_data.get_spell_level_data(spell_id, level)
 
 func cleanup():
 	"""清理资源"""

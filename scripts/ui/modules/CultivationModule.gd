@@ -1,8 +1,8 @@
 class_name CultivationModule extends Node
 
-const AttributeCalculator = preload("res://scripts/core/shared/AttributeCalculator.gd")
-const ActionLockManager = preload("res://scripts/utils/flow/ActionLockManager.gd")
-const CultivationLogic = preload("res://scripts/core/cultivation/CultivationSystem.gd")
+const ATTRIBUTE_CALCULATOR = preload("res://scripts/core/shared/AttributeCalculator.gd")
+const ACTION_LOCK_MANAGER = preload("res://scripts/utils/flow/ActionLockManager.gd")
+const CULTIVATION_LOGIC = preload("res://scripts/core/cultivation/CultivationSystem.gd")
 
 signal cultivation_started
 signal cultivation_stopped
@@ -50,7 +50,7 @@ const FLUSH_WAIT_MAX_FRAMES: int = 180
 const MIN_FLUSH_SECONDS: float = 1.0
 
 const ACTION_COOLDOWN_SECONDS := 0.1
-var _action_lock := ActionLockManager.new()
+var _action_lock := ACTION_LOCK_MANAGER.new()
 
 func initialize(
 	ui: Node,
@@ -99,7 +99,7 @@ func _apply_optimistic_progress(elapsed_seconds: float):
 		return
 
 	# 灵气乐观更新（按真实经过时间结算）
-	var spirit_gain = CultivationLogic.calculate_spirit_gain_per_second(player) * elapsed_seconds
+	var spirit_gain = CULTIVATION_LOGIC.calculate_spirit_gain_per_second(player) * elapsed_seconds
 	if spirit_gain > 0:
 		player.add_spirit(spirit_gain)
 
@@ -118,7 +118,7 @@ func _apply_optimistic_whole_seconds_from_accumulator() -> void:
 		_apply_optimistic_progress(1.0)
 
 func _optimistic_heal_by_elapsed(elapsed_seconds: float):
-	var exact_regen = CultivationLogic.calculate_health_regen_per_second(player, _get_spell_system())
+	var exact_regen = CULTIVATION_LOGIC.calculate_health_regen_per_second(player, _get_spell_system())
 	var before_whole = int(_optimistic_health_regen_accumulator)
 	_optimistic_health_regen_accumulator += exact_regen * elapsed_seconds
 	var after_whole = int(_optimistic_health_regen_accumulator)

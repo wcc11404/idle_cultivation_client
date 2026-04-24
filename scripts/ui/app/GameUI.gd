@@ -1,24 +1,24 @@
 extends Control
 
 # 预加载模块
-const AlchemyModule = preload("res://scripts/ui/modules/AlchemyModule.gd")
-const SettingsModule = preload("res://scripts/ui/modules/SettingsModule.gd")
-const DongfuModule = preload("res://scripts/ui/modules/DongfuModule.gd")
-const ChunaModule = preload("res://scripts/ui/modules/ChunaModule.gd")
-const SpellModule = preload("res://scripts/ui/modules/SpellModule.gd")
-const NeishiModule = preload("res://scripts/ui/modules/NeishiModule.gd")
-const CultivationModule = preload("res://scripts/ui/modules/CultivationModule.gd")
-const LianliModule = preload("res://scripts/ui/modules/LianliModule.gd")
-const HerbGatherModule = preload("res://scripts/ui/modules/HerbGatherModule.gd")
-const ProfileEditPopup = preload("res://scripts/ui/modules/ProfileEditPopup.gd")
-const GameServerAPI = preload("res://scripts/network/GameServerAPI.gd")
-const TabBarStyleTemplate = preload("res://scripts/ui/common/TabBarStyleTemplate.gd")
-const DisplayPanelTemplate = preload("res://scripts/ui/common/DisplayPanelTemplate.gd")
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
-const AccountConfig = preload("res://scripts/core/account/AccountConfig.gd")
-const UIFontProvider = preload("res://scripts/ui/common/UIFontProvider.gd")
-const UIIconProvider = preload("res://scripts/ui/common/UIIconProvider.gd")
-const SafeAreaHelper = preload("res://scripts/ui/common/SafeAreaHelper.gd")
+const ALCHEMY_MODULE_SCRIPT = preload("res://scripts/ui/modules/AlchemyModule.gd")
+const SETTINGS_MODULE_SCRIPT = preload("res://scripts/ui/modules/SettingsModule.gd")
+const DONGFU_MODULE_SCRIPT = preload("res://scripts/ui/modules/DongfuModule.gd")
+const CHUNA_MODULE_SCRIPT = preload("res://scripts/ui/modules/ChunaModule.gd")
+const SPELL_MODULE_SCRIPT = preload("res://scripts/ui/modules/SpellModule.gd")
+const NEISHI_MODULE_SCRIPT = preload("res://scripts/ui/modules/NeishiModule.gd")
+const CULTIVATION_MODULE_SCRIPT = preload("res://scripts/ui/modules/CultivationModule.gd")
+const LIANLI_MODULE_SCRIPT = preload("res://scripts/ui/modules/LianliModule.gd")
+const HERB_GATHER_MODULE_SCRIPT = preload("res://scripts/ui/modules/HerbGatherModule.gd")
+const PROFILE_EDIT_POPUP_SCRIPT = preload("res://scripts/ui/modules/ProfileEditPopup.gd")
+const GAME_SERVER_API_SCRIPT = preload("res://scripts/network/GameServerAPI.gd")
+const TAB_BAR_STYLE_TEMPLATE = preload("res://scripts/ui/common/TabBarStyleTemplate.gd")
+const DISPLAY_PANEL_TEMPLATE = preload("res://scripts/ui/common/DisplayPanelTemplate.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const ACCOUNT_CONFIG_SCRIPT = preload("res://scripts/core/account/AccountConfig.gd")
+const UI_FONT_PROVIDER = preload("res://scripts/ui/common/UIFontProvider.gd")
+const UI_ICON_PROVIDER = preload("res://scripts/ui/common/UIIconProvider.gd")
+const SAFE_AREA_HELPER = preload("res://scripts/ui/common/SafeAreaHelper.gd")
 
 var player: Node = null
 var inventory: Node = null
@@ -250,16 +250,16 @@ var _network_ui_last_log_at: float = 0.0
 const NETWORK_UI_LOG_THROTTLE_SECONDS := 2.0
 
 func _ready():
-	UIFontProvider.apply_to_root(self)
+	UI_FONT_PROVIDER.apply_to_root(self)
 	if spirit_stone_icon:
-		spirit_stone_icon.texture = UIIconProvider.load_svg_texture(UIIconProvider.ICON_SPIRIT_STONE)
+		spirit_stone_icon.texture = UI_ICON_PROVIDER.load_svg_texture(UI_ICON_PROVIDER.ICON_SPIRIT_STONE)
 	# 安全获取可选节点
 	_setup_optional_nodes()
 	_setup_bottom_tab_layout()
 	_setup_neishi_sub_tab_layout()
 	
 	# 初始化GameServerAPI
-	api = GameServerAPI.new()
+	api = GAME_SERVER_API_SCRIPT.new()
 	add_child(api)
 	
 	await get_tree().process_frame
@@ -309,13 +309,13 @@ func _setup_optional_nodes():
 
 func _setup_action_button_templates():
 	if cultivate_button:
-		ActionButtonTemplate.apply_cultivation_yellow(
+		ACTION_BUTTON_TEMPLATE.apply_cultivation_yellow(
 			cultivate_button,
 			cultivate_button.custom_minimum_size,
 			20
 		)
 	if breakthrough_button:
-		ActionButtonTemplate.apply_breakthrough_red(
+		ACTION_BUTTON_TEMPLATE.apply_breakthrough_red(
 			breakthrough_button,
 			breakthrough_button.custom_minimum_size,
 			20
@@ -324,11 +324,11 @@ func _setup_action_button_templates():
 func _setup_status_header_style():
 	if not status_header_row:
 		return
-	DisplayPanelTemplate.apply_to_row(status_header_row, {
+	DISPLAY_PANEL_TEMPLATE.apply_to_row(status_header_row, {
 		"title_text": "属性面板"
 	})
 	# 展示面板模板约束：内容左侧与标题首字左侧对齐，标题下留白固定
-	DisplayPanelTemplate.apply_content_layout(
+	DISPLAY_PANEL_TEMPLATE.apply_content_layout(
 		[status_health_left_pad, status_spirit_left_pad],
 		status_separator_margin,
 		status_header_bottom_spacer
@@ -337,11 +337,11 @@ func _setup_status_header_style():
 func _setup_breakthrough_panel_style():
 	if not breakthrough_header_row:
 		return
-	DisplayPanelTemplate.apply_to_row(breakthrough_header_row, {
+	DISPLAY_PANEL_TEMPLATE.apply_to_row(breakthrough_header_row, {
 		"title_text": "突破详情"
 	})
 	# 展示面板模板约束：内容左侧与标题首字左侧对齐，标题下留白固定
-	DisplayPanelTemplate.apply_content_layout(
+	DISPLAY_PANEL_TEMPLATE.apply_content_layout(
 		[],
 		breakthrough_materials_margin,
 		breakthrough_header_bottom_spacer
@@ -375,7 +375,7 @@ func _setup_bottom_tab_layout():
 	if not tab_bar:
 		return
 	var tab_bar_height: float = max(62.0, tab_bar.custom_minimum_size.y)
-	TabBarStyleTemplate.apply_to_bar(tab_bar, {
+	TAB_BAR_STYLE_TEMPLATE.apply_to_bar(tab_bar, {
 		"bar_height": tab_bar_height,
 		"font_size": 23,
 		"text_raise": 20.0,
@@ -398,7 +398,7 @@ func _setup_neishi_sub_tab_layout():
 	if not neishi_tab_bar:
 		return
 	var neishi_tab_height: float = max(58.0, neishi_tab_bar.custom_minimum_size.y)
-	TabBarStyleTemplate.apply_to_bar(neishi_tab_bar, {
+	TAB_BAR_STYLE_TEMPLATE.apply_to_bar(neishi_tab_bar, {
 		"bar_height": neishi_tab_height,
 		"font_size": 20,
 		"line_position": "bottom",
@@ -425,7 +425,7 @@ func _apply_safe_area_layout():
 	if not content_frame:
 		return
 	var viewport_rect: Rect2 = get_viewport().get_visible_rect()
-	var safe_rect: Rect2 = SafeAreaHelper.get_safe_inner_rect(self)
+	var safe_rect: Rect2 = SAFE_AREA_HELPER.get_safe_inner_rect(self)
 	content_frame.scale = Vector2.ONE
 	content_frame.position = safe_rect.position
 	content_frame.size = safe_rect.size
@@ -497,7 +497,7 @@ func setup_button_connections():
 
 func setup_alchemy_module():
 	# 创建炼丹模块
-	alchemy_module = AlchemyModule.new()
+	alchemy_module = ALCHEMY_MODULE_SCRIPT.new()
 	alchemy_module.name = "AlchemyModule"
 	add_child(alchemy_module)
 	
@@ -557,7 +557,7 @@ func _on_back_to_region_requested():
 
 func setup_settings_module():
 	# 创建设置模块
-	settings_module = SettingsModule.new()
+	settings_module = SETTINGS_MODULE_SCRIPT.new()
 	settings_module.name = "SettingsModule"
 	add_child(settings_module)
 	
@@ -593,7 +593,7 @@ func setup_settings_module():
 func setup_profile_edit_popup():
 	if profile_edit_popup:
 		return
-	profile_edit_popup = ProfileEditPopup.new()
+	profile_edit_popup = PROFILE_EDIT_POPUP_SCRIPT.new()
 	add_child(profile_edit_popup)
 	profile_edit_popup.setup(self)
 	profile_edit_popup.nickname_submit_requested.connect(_on_profile_nickname_submit_requested)
@@ -627,7 +627,7 @@ func _open_profile_edit_popup():
 	if game_manager:
 		account_info = game_manager.get_account_info()
 	var nickname = str(account_info.get("nickname", "修仙者"))
-	var avatar_id = str(account_info.get("avatar_id", AccountConfig.get_default_avatar_id()))
+	var avatar_id = str(account_info.get("avatar_id", ACCOUNT_CONFIG_SCRIPT.get_default_avatar_id()))
 	profile_edit_popup.show_popup(nickname, avatar_id)
 
 func _on_profile_popup_closed():
@@ -720,7 +720,7 @@ func _get_profile_avatar_result_text(result: Dictionary, fallback: String = "头
 
 func setup_region_module():
 	# 创建地区模块
-	region_module = DongfuModule.new()
+	region_module = DONGFU_MODULE_SCRIPT.new()
 	region_module.name = "RegionModule"
 	add_child(region_module)
 	
@@ -735,7 +735,7 @@ func setup_region_module():
 	region_module.herb_gather_requested.connect(_on_herb_gather_requested)
 
 func setup_herb_gather_module():
-	herb_gather_module = HerbGatherModule.new()
+	herb_gather_module = HERB_GATHER_MODULE_SCRIPT.new()
 	herb_gather_module.name = "HerbGatherModule"
 	add_child(herb_gather_module)
 
@@ -752,7 +752,7 @@ func _on_herb_gather_requested():
 
 func setup_chuna_module():
 	# 创建储纳模块
-	chuna_module = ChunaModule.new()
+	chuna_module = CHUNA_MODULE_SCRIPT.new()
 	chuna_module.name = "ChunaModule"
 	add_child(chuna_module)
 	
@@ -774,7 +774,7 @@ func setup_chuna_module():
 	chuna_module.log_message.connect(_on_module_log)
 
 func setup_spell_module():
-	spell_module = SpellModule.new()
+	spell_module = SPELL_MODULE_SCRIPT.new()
 	spell_module.name = "SpellModule"
 	add_child(spell_module)
 	
@@ -790,7 +790,7 @@ func setup_spell_module():
 
 func setup_neishi_module():
 	# 创建修炼突破模块
-	cultivation_module = CultivationModule.new()
+	cultivation_module = CULTIVATION_MODULE_SCRIPT.new()
 	cultivation_module.name = "CultivationModule"
 	add_child(cultivation_module)
 	
@@ -832,7 +832,7 @@ func setup_neishi_module():
 	cultivation_module.log_message.connect(_on_module_log)
 	
 	# 创建内视模块
-	neishi_module = NeishiModule.new()
+	neishi_module = NEISHI_MODULE_SCRIPT.new()
 	neishi_module.name = "NeishiModule"
 	add_child(neishi_module)
 	
@@ -880,7 +880,7 @@ func _on_alchemy_log(message: String):
 
 func setup_lianli_module():
 	# 创建历练模块
-	lianli_module = LianliModule.new()
+	lianli_module = LIANLI_MODULE_SCRIPT.new()
 	lianli_module.name = "LianliModule"
 	add_child(lianli_module)
 	
@@ -1063,6 +1063,13 @@ func refresh_all_player_data():
 	var data = result.get("data", {})
 	
 	# 3. 分发并应用数据到各个核心系统
+	if data.has("spell_system") and spell_system:
+		spell_system.apply_save_data(data["spell_system"])
+		if spell_module:
+			spell_module.spell_system = spell_system # 确保引用最新
+			spell_module.spell_data = spell_data_ref # 确保引用最新
+			spell_module.update_spell_ui()
+
 	if data.has("player") and player:
 		player.apply_save_data(data["player"])
 		if cultivation_module and not player.get_is_cultivating() and cultivation_module.has_method("reset_local_runtime_state"):
@@ -1076,13 +1083,6 @@ func refresh_all_player_data():
 			chuna_module.item_data = item_data_ref # 确保引用最新
 			chuna_module.setup_inventory_grid()
 			chuna_module.update_inventory_ui()
-			
-	if data.has("spell_system") and spell_system:
-		spell_system.apply_save_data(data["spell_system"])
-		if spell_module:
-			spell_module.spell_system = spell_system # 确保引用最新
-			spell_module.spell_data = spell_data_ref # 确保引用最新
-			spell_module.update_spell_ui()
 			
 	if data.has("alchemy_system") and alchemy_system:
 		alchemy_system.apply_save_data(data["alchemy_system"])
@@ -1604,7 +1604,7 @@ func update_account_ui():
 	# 更新头像显示
 	var avatar_id = account_info.get("avatar_id", "abstract")
 	if avatar_texture:
-		var avatar_path = AccountConfig.get_avatar_path(avatar_id)
+		var avatar_path = ACCOUNT_CONFIG_SCRIPT.get_avatar_path(avatar_id)
 		var texture = load(avatar_path)
 		if texture:
 			avatar_texture.texture = texture

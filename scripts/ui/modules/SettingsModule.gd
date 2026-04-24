@@ -1,7 +1,7 @@
 class_name SettingsModule extends Node
 
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
-const UIIconProvider = preload("res://scripts/ui/common/UIIconProvider.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const UI_ICON_PROVIDER = preload("res://scripts/ui/common/UIIconProvider.gd")
 const SETTINGS_SAVE_PATH := "user://settings.cfg"
 const DEFAULT_FPS_LIMIT := 60
 const DEFAULT_MUSIC_VOLUME := 0.8
@@ -92,8 +92,8 @@ func _refresh_mute_button_icon():
 	_ensure_mute_button_icon()
 	if not _music_mute_icon_rect:
 		return
-	_music_mute_icon_rect.texture = UIIconProvider.load_svg_texture(
-		UIIconProvider.ICON_AUDIO_OFF if _is_music_muted else UIIconProvider.ICON_AUDIO_ON
+	_music_mute_icon_rect.texture = UI_ICON_PROVIDER.load_svg_texture(
+		UI_ICON_PROVIDER.ICON_AUDIO_OFF if _is_music_muted else UI_ICON_PROVIDER.ICON_AUDIO_ON
 	)
 
 func _style_rank_back_button():
@@ -101,7 +101,7 @@ func _style_rank_back_button():
 		return
 	# 与炼丹房返回按钮保持一致
 	back_button.custom_minimum_size = Vector2(96, 40)
-	ActionButtonTemplate.apply_light_neutral(back_button, back_button.custom_minimum_size, 20)
+	ACTION_BUTTON_TEMPLATE.apply_light_neutral(back_button, back_button.custom_minimum_size, 20)
 
 func _setup_signals():
 	if logout_button:
@@ -164,13 +164,13 @@ func _setup_fps_preset_styles():
 		var btn: Button = btn_variant
 		if not btn:
 			continue
-		ActionButtonTemplate.apply_light_neutral(btn, btn.custom_minimum_size, 16)
+		ACTION_BUTTON_TEMPLATE.apply_light_neutral(btn, btn.custom_minimum_size, 16)
 
 func _apply_aux_button_templates():
 	if music_mute_button:
-		ActionButtonTemplate.apply_light_neutral(music_mute_button, music_mute_button.custom_minimum_size, 16)
+		ACTION_BUTTON_TEMPLATE.apply_light_neutral(music_mute_button, music_mute_button.custom_minimum_size, 16)
 	if redeem_confirm_button:
-		ActionButtonTemplate.apply_light_neutral(redeem_confirm_button, redeem_confirm_button.custom_minimum_size, 16)
+		ACTION_BUTTON_TEMPLATE.apply_light_neutral(redeem_confirm_button, redeem_confirm_button.custom_minimum_size, 16)
 
 func _refresh_fps_preset_visual(current_limit: int):
 	var mapping := {
@@ -186,9 +186,9 @@ func _refresh_fps_preset_visual(current_limit: int):
 			continue
 		var is_selected := int(key) == current_limit
 		if is_selected:
-			ActionButtonTemplate.apply_light_neutral_selected(btn, btn.custom_minimum_size, 16)
+			ACTION_BUTTON_TEMPLATE.apply_light_neutral_selected(btn, btn.custom_minimum_size, 16)
 		else:
-			ActionButtonTemplate.apply_light_neutral(btn, btn.custom_minimum_size, 16)
+			ACTION_BUTTON_TEMPLATE.apply_light_neutral(btn, btn.custom_minimum_size, 16)
 
 func _find_music_bus_name() -> String:
 	if AudioServer.get_bus_index("Music") != -1:

@@ -1,9 +1,9 @@
 class_name ChunaModule extends Node
 
 # 储纳模块 - 处理物品管理、物品详情等功能
-const ActionLockManager = preload("res://scripts/utils/flow/ActionLockManager.gd")
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
-const PopupStyleTemplate = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
+const ACTION_LOCK_MANAGER = preload("res://scripts/utils/flow/ActionLockManager.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const POPUP_STYLE_TEMPLATE = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
 
 # 信号
 signal item_selected(item_id: String, index: int)
@@ -57,7 +57,7 @@ var _discard_confirm_line2: Label = null
 var _discard_confirm_button: Button = null
 
 const ACTION_COOLDOWN_SECONDS := 0.1
-var _action_lock := ActionLockManager.new()
+var _action_lock := ACTION_LOCK_MANAGER.new()
 
 func initialize(
 	ui: Node,
@@ -91,13 +91,13 @@ func initialize(
 
 func _apply_action_button_templates():
 	if use_button:
-		ActionButtonTemplate.apply_cultivation_yellow(use_button, use_button.custom_minimum_size)
+		ACTION_BUTTON_TEMPLATE.apply_cultivation_yellow(use_button, use_button.custom_minimum_size)
 	if discard_button:
-		ActionButtonTemplate.apply_breakthrough_red(discard_button, discard_button.custom_minimum_size)
+		ACTION_BUTTON_TEMPLATE.apply_breakthrough_red(discard_button, discard_button.custom_minimum_size)
 	if expand_button:
-		ActionButtonTemplate.apply_cultivation_yellow(expand_button, expand_button.custom_minimum_size)
+		ACTION_BUTTON_TEMPLATE.apply_cultivation_yellow(expand_button, expand_button.custom_minimum_size)
 	if sort_button:
-		ActionButtonTemplate.apply_light_neutral(sort_button, sort_button.custom_minimum_size)
+		ACTION_BUTTON_TEMPLATE.apply_light_neutral(sort_button, sort_button.custom_minimum_size)
 
 func _get_game_manager() -> Node:
 	return get_node_or_null("/root/GameManager")
@@ -307,9 +307,9 @@ func _setup_discard_confirm_popup():
 		if event is InputEventMouseButton and event.pressed:
 			_discard_confirm_panel.accept_event()
 	)
-	_discard_confirm_panel.add_theme_stylebox_override("panel", PopupStyleTemplate.build_panel_style({
-		"bg_color": PopupStyleTemplate.POPUP_BG_COLOR,
-		"border_color": PopupStyleTemplate.POPUP_BORDER_COLOR,
+	_discard_confirm_panel.add_theme_stylebox_override("panel", POPUP_STYLE_TEMPLATE.build_panel_style({
+		"bg_color": POPUP_STYLE_TEMPLATE.POPUP_BG_COLOR,
+		"border_color": POPUP_STYLE_TEMPLATE.POPUP_BORDER_COLOR,
 		"corner_radius": 12,
 		"border_width": 2
 	}))
@@ -348,7 +348,7 @@ func _setup_discard_confirm_popup():
 	_discard_confirm_button.name = "DiscardConfirmButton"
 	_discard_confirm_button.text = "确定丢弃"
 	_discard_confirm_button.custom_minimum_size = Vector2(170, 46)
-	ActionButtonTemplate.apply_breakthrough_red(_discard_confirm_button, _discard_confirm_button.custom_minimum_size, 18)
+	ACTION_BUTTON_TEMPLATE.apply_breakthrough_red(_discard_confirm_button, _discard_confirm_button.custom_minimum_size, 18)
 	_discard_confirm_button.pressed.connect(_on_discard_confirmed)
 	vbox.add_child(_discard_confirm_button)
 
@@ -769,11 +769,70 @@ func _end_action_lock(action_key: String):
 func has_pending_test_tasks() -> bool:
 	return _action_lock.has_any_in_flight()
 
-func _refresh_after_inventory_action():
+func _apply_local_unlock_result(result: Dictionary):
+	if not spell_system:
+		return
+	var reason_code := str(result.get("reason_code", ""))
+	if reason_code != "INVENTORY_USE_UNLOCK_SPELL_SUCCEEDED":
+		return
+	var reason_data = result.get("reason_data", {})
+	var effect = reason_data.get("effect", {})
+	if not (effect is Dictionary):
+		return
+	var spell_id := str(effect.get("spell_id", ""))
+	if spell_id.is_empty():
+		return
+	var player_spells: Dictionary = spell_system.get_player_spells() if spell_system.has_method("get_player_spells") else {}
+	if not (player_spells is Dictionary):
+		return
+	if not player_spells.has(spell_id):
+		return
+	var spell_info = player_spells[spell_id]
+	spell_info["obtained"] = true
+	if int(spell_info.get("level", 0)) <= 0:
+		spell_info["level"] = 1
+	if not spell_info.has("use_count"):
+		spell_info["use_count"] = 0
+	if not spell_info.has("charged_spirit"):
+		spell_info["charged_spirit"] = 0
+	if game_ui and game_ui.spell_module:
+		game_ui.spell_module.update_spell_ui()
+
+func _refresh_after_inventory_action(preserve_selection: bool = true):
 	if game_ui and game_ui.has_method("refresh_all_player_data"):
 		await game_ui.refresh_all_player_data()
 	else:
 		await _refresh_inventory_from_server()
+	if preserve_selection:
+		_restore_selected_item_detail_if_possible()
+	else:
+		_clear_item_detail_panel()
+
+func _restore_selected_item_detail_if_possible():
+	if not inventory:
+		_clear_item_detail_panel()
+		return
+	if current_selected_index < 0:
+		_clear_item_detail_panel()
+		return
+
+	var item_list = inventory.get_item_list()
+	if current_selected_index >= item_list.size():
+		_clear_item_detail_panel()
+		return
+
+	var item = item_list[current_selected_index]
+	if item == null or bool(item.get("empty", true)):
+		_clear_item_detail_panel()
+		return
+
+	var item_id = str(item.get("id", ""))
+	if item_id.is_empty():
+		_clear_item_detail_panel()
+		return
+
+	current_selected_item_id = item_id
+	_show_item_detail(current_selected_index)
 
 # 按钮处理函数
 func _on_view_button_pressed():
@@ -811,9 +870,9 @@ func _on_use_button_pressed():
 		return
 
 	item_used.emit(item_id)
-	_clear_item_detail_panel()
+	_apply_local_unlock_result(result)
 	
-	await _refresh_after_inventory_action()
+	await _refresh_after_inventory_action(true)
 	_add_log(_get_inventory_result_message(result, "使用成功"))
 
 	_end_action_lock("inventory_use")
@@ -860,9 +919,8 @@ func _perform_discard():
 
 	item_discarded.emit(current_selected_item_id, 1)
 	_add_log(_get_inventory_result_message(result, "丢弃成功"))
-	_clear_item_detail_panel()
 	
-	await _refresh_after_inventory_action()
+	await _refresh_after_inventory_action(true)
 
 	_end_action_lock("inventory_discard")
 
@@ -900,8 +958,7 @@ func _on_sort_button_pressed():
 		_end_action_lock("inventory_sort")
 		return
 
-	_clear_item_detail_panel()
-	await _refresh_after_inventory_action()
+	await _refresh_after_inventory_action(false)
 	_add_log(_get_inventory_result_message(result, "整理成功"))
 	_end_action_lock("inventory_sort")
 

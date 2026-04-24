@@ -1,8 +1,8 @@
 class_name SpellModule extends Node
 
-const ActionLockManager = preload("res://scripts/utils/flow/ActionLockManager.gd")
-const SpellThumbnailTemplate = preload("res://scripts/ui/common/SpellThumbnailTemplate.gd")
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const ACTION_LOCK_MANAGER = preload("res://scripts/utils/flow/ActionLockManager.gd")
+const SPELL_THUMBNAIL_TEMPLATE = preload("res://scripts/ui/common/SpellThumbnailTemplate.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
 
 signal spell_equipped(spell_id: String)
 signal spell_unequipped(spell_id: String)
@@ -32,7 +32,7 @@ var _signals_connected: bool = false
 var _scroll_vertical_step: float = 20.0
 
 const ACTION_COOLDOWN_SECONDS := 0.1
-var _action_lock := ActionLockManager.new()
+var _action_lock := ACTION_LOCK_MANAGER.new()
 
 const TYPE_ORDER = ["breathing", "active", "opening", "production"]
 const TYPE_NAMES = {
@@ -302,8 +302,8 @@ func _create_spell_card(spell_id: String, info: Dictionary, data: Dictionary) ->
 	if name_label:
 		name_label.text = spell_name
 	
-	var obtained = data.get("obtained", false)
-	var level = data.get("level", 0)
+	var level = int(data.get("level", 0))
+	var obtained = bool(data.get("obtained", false)) or level > 0
 	var is_equipped = spell_system.is_spell_equipped(spell_id) if spell_system else false
 	var spell_type = info.get("type", "")
 	var is_production = (spell_type == "production")
@@ -320,7 +320,7 @@ func _create_spell_card(spell_id: String, info: Dictionary, data: Dictionary) ->
 				status_label.add_theme_color_override("font_color", Color(0.2, 0.2, 0.2))
 	
 	if view_btn:
-		ActionButtonTemplate.apply_spell_view_brown(view_btn)
+		ACTION_BUTTON_TEMPLATE.apply_spell_view_brown(view_btn)
 		for conn in view_btn.pressed.get_connections():
 			view_btn.pressed.disconnect(conn.callable)
 		view_btn.pressed.connect(_on_view_button_pressed.bind(spell_id))
@@ -339,20 +339,20 @@ func _create_spell_card(spell_id: String, info: Dictionary, data: Dictionary) ->
 				else:
 					equip_btn.text = "装备"
 				equip_btn.disabled = false
-				ActionButtonTemplate.apply_cultivation_yellow(equip_btn)
+				ACTION_BUTTON_TEMPLATE.apply_cultivation_yellow(equip_btn)
 				equip_btn.pressed.connect(_on_equip_button_pressed.bind(spell_id))
 			else:
 				equip_btn.text = "装备"
 				equip_btn.disabled = true
-				ActionButtonTemplate.apply_cultivation_yellow(equip_btn)
+				ACTION_BUTTON_TEMPLATE.apply_cultivation_yellow(equip_btn)
 	
 	return card
 
 func _create_card_template() -> Control:
 	var card = PanelContainer.new()
 	card.custom_minimum_size = Vector2(130, 160)
-	SpellThumbnailTemplate.apply_to_card(card, {
-		"bg_color": SpellThumbnailTemplate.DEFAULT_BG_COLOR
+	SPELL_THUMBNAIL_TEMPLATE.apply_to_card(card, {
+		"bg_color": SPELL_THUMBNAIL_TEMPLATE.DEFAULT_BG_COLOR
 	})
 	
 	var vbox = VBoxContainer.new()
@@ -508,18 +508,54 @@ func _on_spell_upgrade_pressed():
 		if not err_msg.is_empty():
 			_add_log(err_msg)
 
+func _flush_cultivation_before_spell_action(action_name: String) -> bool:
+	if game_ui and game_ui.get("cultivation_module") and game_ui.get("cultivation_module").has_method("flush_pending_and_then"):
+		var settle_ok = await game_ui.get("cultivation_module").flush_pending_and_then(func(): pass)
+		if not settle_ok:
+			_add_log(action_name + "前修炼同步失败，请稍后重试")
+			return false
+	return true
+
+func _apply_local_charge_result(result: Dictionary):
+	var reason_data = result.get("reason_data", {})
+	var charged_amount = float(reason_data.get("charged_amount", result.get("charged_amount", 0)))
+	if charged_amount <= 0.0:
+		return
+
+	if player:
+		player.set_spirit(max(0.0, float(player.spirit_energy) - charged_amount))
+
+	if spell_system:
+		var player_spells = spell_system.get_player_spells()
+		if player_spells.has(current_viewing_spell):
+			var spell_info = player_spells[current_viewing_spell]
+			spell_info["charged_spirit"] = int(spell_info.get("charged_spirit", 0)) + int(charged_amount)
+
+	if game_ui and game_ui.has_method("update_ui"):
+		game_ui.update_ui()
+
 func _on_spell_charge_pressed():
-	if current_viewing_spell.is_empty(): return
+	if current_viewing_spell.is_empty():
+		return
+	if not _begin_action_lock("spell_charge"):
+		return
+	var settle_ok = await _flush_cultivation_before_spell_action("充灵")
+	if not settle_ok:
+		_end_action_lock("spell_charge")
+		return
 	var multiplier = MULTIPLIERS[current_multiplier_index]
 	var result = await api.spell_charge(current_viewing_spell, multiplier)
 	if result.get("success", false):
+		_apply_local_charge_result(result)
 		_add_log(_get_spell_result_text(result, "充灵成功"))
+		_update_spell_detail_popup()
 		await _refresh_after_spell_action()
 		_update_spell_detail_popup()
 	else:
 		var err_msg = _get_spell_result_text(result, "充灵失败")
 		if not err_msg.is_empty():
 			_add_log(err_msg)
+	_end_action_lock("spell_charge")
 
 func _refresh_after_spell_action():
 	await _refresh_spell_from_server()

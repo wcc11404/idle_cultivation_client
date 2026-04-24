@@ -1,6 +1,6 @@
 extends GutTest
 
-const ModuleHarness = preload("res://tests_gut/support/module_harness.gd")
+const MODULE_HARNESS = preload("res://tests_gut/support/ModuleHarness.gd")
 
 class FakeLianliNetworkManager:
 	extends Node
@@ -67,7 +67,7 @@ class CaptureFinishApi:
 var harness: ModuleHarness = null
 
 func before_each():
-	harness = ModuleHarness.new()
+	harness = MODULE_HARNESS.new()
 	add_child(harness)
 	await harness.bootstrap("http://localhost:8444/api", "lianli_ready")
 
@@ -230,3 +230,19 @@ func test_lianli_full_settle_uses_null_index():
 	await module._finish_current_battle(true)
 
 	assert_eq(capture_api.captured_finish_index, null, "完整结算应上传 null（请求体省略 index）")
+
+func test_tower_reward_panel_shows_current_floor_reward_when_current_floor_is_reward_floor():
+	var module = harness.game_ui.lianli_module
+	var lianli_sys = harness.get_game_manager().get_lianli_system()
+
+	module.current_lianli_area_id = "sourth_endless_tower"
+	lianli_sys.is_in_tower = true
+	lianli_sys.current_tower_floor = 5
+
+	module._update_battle_info()
+
+	assert_eq(
+		module.reward_info_label.text,
+		"距离奖励层还需挑战 0 层（第5层）\n奖励：10灵石、3补血丹",
+		"当前挑战层本身就是奖励层时，应显示当前层奖励而不是下一奖励层"
+	)

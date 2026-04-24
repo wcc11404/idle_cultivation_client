@@ -1,8 +1,8 @@
 class_name AlchemyModule extends Node
 
 # 炼丹模块 - 处理炼丹房UI显示
-const ActionLockManager = preload("res://scripts/utils/flow/ActionLockManager.gd")
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const ACTION_LOCK_MANAGER = preload("res://scripts/utils/flow/ActionLockManager.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
 
 # === 信号 ===
 signal recipe_selected(recipe_id: String)
@@ -85,7 +85,7 @@ var _signals_connected: bool = false
 var _ui_style_setup_done: bool = false
 
 const ACTION_COOLDOWN_SECONDS := 0.1
-var _action_lock := ActionLockManager.new()
+var _action_lock := ACTION_LOCK_MANAGER.new()
 
 func _get_item_name(item_id: String) -> String:
 	if item_id == "spirit_energy":
@@ -546,7 +546,7 @@ func _update_count_button_styles():
 
 func _apply_count_button_style(btn: Button, _is_selected: bool):
 	btn.custom_minimum_size = Vector2(54, 40)
-	ActionButtonTemplate.apply_spell_view_brown(btn, btn.custom_minimum_size, FONT_SIZE_NORMAL)
+	ACTION_BUTTON_TEMPLATE.apply_spell_view_brown(btn, btn.custom_minimum_size, FONT_SIZE_NORMAL)
 
 func _style_craft_button():
 	if not craft_button:
@@ -554,7 +554,7 @@ func _style_craft_button():
 	
 	craft_button.text = "开始炼制"
 	craft_button.custom_minimum_size = Vector2(160, 56)
-	ActionButtonTemplate.apply_alchemy_green(craft_button, craft_button.custom_minimum_size, FONT_SIZE_TITLE)
+	ACTION_BUTTON_TEMPLATE.apply_alchemy_green(craft_button, craft_button.custom_minimum_size, FONT_SIZE_TITLE)
 	
 	_style_stop_button()
 
@@ -564,7 +564,7 @@ func _style_stop_button():
 	
 	stop_button.text = "停止炼制"
 	stop_button.custom_minimum_size = Vector2(160, 56)
-	ActionButtonTemplate.apply_breakthrough_red(stop_button, stop_button.custom_minimum_size, FONT_SIZE_TITLE)
+	ACTION_BUTTON_TEMPLATE.apply_breakthrough_red(stop_button, stop_button.custom_minimum_size, FONT_SIZE_TITLE)
 
 func _clear_container_children(container: Node):
 	for child in container.get_children():
@@ -578,7 +578,7 @@ func _setup_back_button():
 	
 	if alchemy_back_button:
 		alchemy_back_button.custom_minimum_size = ALCHEMY_BACK_BUTTON_MIN_SIZE
-		ActionButtonTemplate.apply_light_neutral(alchemy_back_button, alchemy_back_button.custom_minimum_size, FONT_SIZE_NORMAL)
+		ACTION_BUTTON_TEMPLATE.apply_light_neutral(alchemy_back_button, alchemy_back_button.custom_minimum_size, FONT_SIZE_NORMAL)
 		return
 	
 	var title_bar = alchemy_room_panel.get_node_or_null("VBoxContainer/TitleBar")
@@ -597,7 +597,7 @@ func _setup_back_button():
 	back_button.text = "< 返回"
 	back_button.custom_minimum_size = ALCHEMY_BACK_BUTTON_MIN_SIZE
 	back_button.pressed.connect(_on_back_button_pressed)
-	ActionButtonTemplate.apply_light_neutral(back_button, back_button.custom_minimum_size, FONT_SIZE_NORMAL)
+	ACTION_BUTTON_TEMPLATE.apply_light_neutral(back_button, back_button.custom_minimum_size, FONT_SIZE_NORMAL)
 	title_bar.add_child(back_button)
 	
 	var spacer = Control.new()

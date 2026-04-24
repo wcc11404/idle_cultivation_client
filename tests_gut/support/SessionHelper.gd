@@ -1,12 +1,12 @@
 extends RefCounted
 
-class_name TestSessionHelper
+class_name SessionHelper
 
-const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
+const SERVER_CONFIG_SCRIPT = preload("res://scripts/network/ServerConfig.gd")
 
-static func reset_local_session(api_base: String = ServerConfig.DEFAULT_API_BASE) -> void:
+static func reset_local_session(api_base: String = SERVER_CONFIG_SCRIPT.DEFAULT_API_BASE) -> void:
 	_clear_session_files()
-	ServerConfig.set_api_base(api_base)
+	SERVER_CONFIG_SCRIPT.set_api_base(api_base)
 	var network_manager = _get_global_network_manager()
 	if network_manager and network_manager.has_method("clear_token"):
 		network_manager.clear_token()
@@ -14,7 +14,7 @@ static func reset_local_session(api_base: String = ServerConfig.DEFAULT_API_BASE
 		network_manager.load_token()
 
 static func _clear_session_files() -> void:
-	for path in [ServerConfig.TOKEN_FILE, ServerConfig.SERVER_CONFIG_FILE]:
+	for path in [SERVER_CONFIG_SCRIPT.TOKEN_FILE, SERVER_CONFIG_SCRIPT.SERVER_CONFIG_FILE]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)
 

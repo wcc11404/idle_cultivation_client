@@ -1,6 +1,6 @@
 extends GutTest
 
-const GameServerAPI = preload("res://scripts/network/GameServerAPI.gd")
+const GAME_SERVER_API_SCRIPT = preload("res://scripts/network/GameServerAPI.gd")
 
 class MockNetworkManager:
 	extends Node
@@ -20,7 +20,7 @@ var api: GameServerAPI = null
 var mock_network_manager: MockNetworkManager = null
 
 func before_each():
-	api = GameServerAPI.new()
+	api = GAME_SERVER_API_SCRIPT.new()
 	add_child(api)
 	mock_network_manager = MockNetworkManager.new()
 	api.add_child(mock_network_manager)

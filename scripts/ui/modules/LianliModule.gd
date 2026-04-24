@@ -2,8 +2,8 @@ class_name LianliModule extends Node
 
 ## 历练模块 - 管理历练和无尽塔功能
 ## 包括战斗UI更新、战斗控制、战斗日志等
-const ActionLockManager = preload("res://scripts/utils/flow/ActionLockManager.gd")
-const UIUtils = preload("res://scripts/utils/ui_utils.gd")
+const ACTION_LOCK_MANAGER = preload("res://scripts/utils/flow/ActionLockManager.gd")
+const UI_UTILS = preload("res://scripts/utils/UIUtils.gd")
 
 # 信号
 signal log_message(message: String)
@@ -78,7 +78,7 @@ const BASE_WAIT_INTERVAL_MIN: float = 3.0
 const BASE_WAIT_INTERVAL_MAX: float = 5.0
 
 const ACTION_COOLDOWN_SECONDS := 0.1
-var _action_lock := ActionLockManager.new()
+var _action_lock := ACTION_LOCK_MANAGER.new()
 
 func _begin_action_lock(action_key: String) -> bool:
 	return _action_lock.try_begin(action_key)
@@ -256,7 +256,7 @@ func _generate_battle_log_message(event: Dictionary) -> String:
 		return actor_name + "使用" + spell_name + "，" + log_effect
 	elif effect_type == "instant_damage":
 		var damage = info.get("damage", 0.0)
-		var damage_str = UIUtils.format_display_number(float(damage))
+		var damage_str = UI_UTILS.format_display_number(float(damage))
 		return actor_name + "使用" + spell_name + "对" + target_name + "造成" + damage_str + "点伤害"
 	
 	return ""
@@ -342,8 +342,8 @@ func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 
 func _format_health_pair(current: float, maximum: float) -> String:
 	return "%s / %s" % [
-		UIUtils.format_display_number_integer(current),
-		UIUtils.format_display_number_integer(maximum)
+		UI_UTILS.format_display_number_integer(current),
+		UI_UTILS.format_display_number_integer(maximum)
 	]
 
 func _finish_current_battle(full_settle: bool):
@@ -402,7 +402,7 @@ func _finish_current_battle(full_settle: bool):
 					if item_data_ref and item_data_ref.has_method("get_item_name"):
 						item_name = item_data_ref.get_item_name(item_id)
 					if log_manager:
-						log_manager.add_battle_log("获得奖励: " + item_name + " x" + UIUtils.format_display_number(float(amount_int)))
+						log_manager.add_battle_log("获得奖励: " + item_name + " x" + UI_UTILS.format_display_number(float(amount_int)))
 
 		# 特殊区域通关日志
 		if battle_victory and lianli_area_data:
@@ -418,6 +418,7 @@ func _finish_current_battle(full_settle: bool):
 
 		on_battle_ended(battle_victory, settle_loot if battle_victory else [], str(_current_enemy_data.get("name", "敌人")))
 		if battle_victory and is_continuous_checked():
+			_prepare_preview_for_next_battle()
 			# 设置等待状态
 			_is_waiting = true
 			_wait_timer = 0.0
@@ -429,6 +430,16 @@ func _finish_current_battle(full_settle: bool):
 			return
 
 	_on_force_exit_lianli()
+
+func _prepare_preview_for_next_battle():
+	if not lianli_system:
+		return
+	_current_enemy_data = {}
+	if lianli_system.is_in_endless_tower() and lianli_area_data:
+		var next_floor = max(1, int(lianli_system.tower_highest_floor) + 1)
+		var max_floor = lianli_area_data.get_tower_max_floor()
+		lianli_system.current_tower_floor = min(next_floor, max_floor)
+	_update_battle_info()
 
 func _simulate_next_battle():
 	if not api or current_lianli_area_id.is_empty():
@@ -642,11 +653,16 @@ func _update_tower_reward_info():
 		return
 	
 	var current_floor = lianli_system.get_current_tower_floor()
+	if lianli_area_data.is_tower_reward_floor(current_floor):
+		var current_reward_desc = lianli_area_data.get_tower_reward_description(current_floor)
+		reward_info_label.text = "距离奖励层还需挑战 0 层（第" + str(current_floor) + "层）\n奖励：" + current_reward_desc
+		return
+
 	var next_reward_floor = lianli_area_data.get_tower_next_reward_floor(current_floor)
 	if next_reward_floor > 0:
 		var floors_to_reward = next_reward_floor - current_floor
 		var reward_desc = lianli_area_data.get_tower_reward_description(next_reward_floor)
-		reward_info_label.text = "距离下次奖励还需挑战 " + str(floors_to_reward) + " 层（第" + str(next_reward_floor) + "层）\n奖励：" + reward_desc
+		reward_info_label.text = "距离奖励层还需挑战 " + str(floors_to_reward) + " 层（第" + str(next_reward_floor) + "层）\n奖励：" + reward_desc
 	else:
 		reward_info_label.text = "已达到最高奖励层"
 
@@ -671,7 +687,7 @@ func _get_special_area_reward_text() -> String:
 
 	var enemy_drops := _get_current_drop_table()
 	if not enemy_drops.is_empty():
-		lines.append("战斗掉落：" + _format_drop_table(enemy_drops))
+		lines.append("战斗概率掉落：" + _format_drop_table(enemy_drops))
 
 	return "\n".join(lines)
 
@@ -680,7 +696,7 @@ func _get_normal_area_reward_text() -> String:
 	var drops := _get_current_drop_table()
 	if drops.is_empty():
 		return ""
-	return "战斗掉落：" + _format_drop_table(drops)
+	return "战斗概率掉落：" + _format_drop_table(drops)
 
 func _format_special_drop_list(special_drops: Dictionary) -> String:
 	var drops_text: Array[String] = []
@@ -688,7 +704,7 @@ func _format_special_drop_list(special_drops: Dictionary) -> String:
 		var amount = int(special_drops[item_id])
 		if amount <= 0:
 			continue
-		drops_text.append(_get_item_name(item_id) + " x" + UIUtils.format_display_number(float(amount)))
+		drops_text.append(_get_item_name(item_id) + " x" + UI_UTILS.format_display_number(float(amount)))
 	return "、".join(drops_text)
 
 func _format_drop_table(drops: Dictionary) -> String:
@@ -700,7 +716,7 @@ func _format_drop_table(drops: Dictionary) -> String:
 		var min_amount = int(drop_info.get("min", 0))
 		var max_amount = int(drop_info.get("max", 0))
 		var chance = float(drop_info.get("chance", 1.0))
-		var amount_text = UIUtils.format_display_number(float(min_amount)) if min_amount == max_amount else (UIUtils.format_display_number(float(min_amount)) + "-" + UIUtils.format_display_number(float(max_amount)))
+		var amount_text = UI_UTILS.format_display_number(float(min_amount)) if min_amount == max_amount else (UI_UTILS.format_display_number(float(min_amount)) + "-" + UI_UTILS.format_display_number(float(max_amount)))
 		var chance_text = ""
 		if chance < 0.9999:
 			chance_text = "（" + str(int(round(chance * 100.0))) + "%）"
@@ -708,11 +724,11 @@ func _format_drop_table(drops: Dictionary) -> String:
 	return "、".join(parts)
 
 func _get_current_drop_table() -> Dictionary:
-	if _current_enemy_data.has("drops"):
+	if _is_timeline_running and _current_enemy_data.has("drops"):
 		var current_drops = _current_enemy_data.get("drops", {})
 		if current_drops is Dictionary and not current_drops.is_empty():
 			return current_drops
-	if lianli_system:
+	if _is_timeline_running and lianli_system:
 		var system_drops = lianli_system.get_current_enemy_drops()
 		if system_drops is Dictionary and not system_drops.is_empty():
 			return system_drops

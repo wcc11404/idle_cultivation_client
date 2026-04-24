@@ -304,7 +304,7 @@ func apply_save_data(data: Dictionary):
 			if not (spell_info is Dictionary):
 				continue
 			var level = int(spell_info.get("level", 0))
-			var obtained = bool(spell_info.get("obtained", level > 0))
+			var obtained = bool(spell_info.get("obtained", false)) or level > 0
 			player_spells[spell_id] = {
 				"obtained": obtained,
 				"level": level,

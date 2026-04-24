@@ -19,6 +19,7 @@ func _load_config():
 			
 			_convert_area_data_types(NORMAL_AREAS)
 			_convert_area_data_types(DAILY_AREAS)
+			_convert_tower_data_types()
 
 func _convert_area_data_types(areas: Dictionary):
 	for area_id in areas.keys():
@@ -43,6 +44,28 @@ func _convert_area_data_types(areas: Dictionary):
 						drop_info["chance"] = float(drop_info["chance"])
 					else:
 						drop_info["chance"] = 1.0
+
+func _convert_tower_data_types():
+	if TOWER_CONFIG.is_empty():
+		return
+	var config = TOWER_CONFIG.get("config", {})
+	if not (config is Dictionary):
+		return
+
+	var reward_floors = config.get("reward_floors", [])
+	var normalized_reward_floors: Array = []
+	for floor in reward_floors:
+		normalized_reward_floors.append(int(floor))
+	config["reward_floors"] = normalized_reward_floors
+
+	var rewards = config.get("rewards", {})
+	if rewards is Dictionary:
+		for reward_floor in rewards.keys():
+			var reward_data = rewards[reward_floor]
+			if not (reward_data is Dictionary):
+				continue
+			for item_id in reward_data.keys():
+				reward_data[item_id] = int(reward_data[item_id])
 
 # ==================== 普通区域相关函数 ====================
 
@@ -176,11 +199,17 @@ func get_tower_description() -> String:
 
 func get_tower_reward_floors() -> Array:
 	var config = TOWER_CONFIG.get("config", {})
-	return config.get("reward_floors", [])
+	var raw_reward_floors = config.get("reward_floors", [])
+	var normalized_reward_floors: Array = []
+	for floor in raw_reward_floors:
+		normalized_reward_floors.append(int(floor))
+	return normalized_reward_floors
 
 func is_tower_reward_floor(floor: int) -> bool:
-	var reward_floors = get_tower_reward_floors()
-	return floor in reward_floors
+	for reward_floor in get_tower_reward_floors():
+		if int(reward_floor) == floor:
+			return true
+	return false
 
 func get_tower_reward_for_floor(floor: int) -> Dictionary:
 	var config = TOWER_CONFIG.get("config", {})
@@ -195,8 +224,8 @@ func get_tower_random_template() -> String:
 	return templates[randi() % templates.size()]
 
 func get_tower_next_reward_floor(current_floor: int) -> int:
-	var reward_floors = get_tower_reward_floors()
-	for floor in reward_floors:
+	for reward_floor in get_tower_reward_floors():
+		var floor = int(reward_floor)
 		if floor > current_floor:
 			return floor
 	return -1

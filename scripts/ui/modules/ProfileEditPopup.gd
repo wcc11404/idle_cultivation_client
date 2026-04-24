@@ -1,9 +1,9 @@
 class_name ProfileEditPopup extends Panel
 
-const PopupStyleTemplate = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
-const ActionButtonTemplate = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
-const AccountConfig = preload("res://scripts/core/account/AccountConfig.gd")
-const SafeAreaHelper = preload("res://scripts/ui/common/SafeAreaHelper.gd")
+const POPUP_STYLE_TEMPLATE = preload("res://scripts/ui/common/PopupStyleTemplate.gd")
+const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
+const ACCOUNT_CONFIG_SCRIPT = preload("res://scripts/core/account/AccountConfig.gd")
+const SAFE_AREA_HELPER = preload("res://scripts/ui/common/SafeAreaHelper.gd")
 
 signal nickname_submit_requested(new_nickname: String)
 signal avatar_submit_requested(avatar_id: String)
@@ -36,7 +36,7 @@ func _init():
 
 func setup(host: Control):
 	overlay_host = host
-	background = PopupStyleTemplate.create_overlay(host, Callable(), 0.58)
+	background = POPUP_STYLE_TEMPLATE.create_overlay(host, Callable(), 0.58)
 	background.name = "ProfileEditOverlay"
 	overlay_host.add_child(background)
 	_build_layout()
@@ -99,7 +99,7 @@ func _build_layout():
 		nickname_submit_requested.emit(nickname_input.text.strip_edges())
 	)
 	vbox.add_child(nickname_submit_button)
-	ActionButtonTemplate.apply_profile_blue(nickname_submit_button, nickname_submit_button.custom_minimum_size, 20)
+	ACTION_BUTTON_TEMPLATE.apply_profile_blue(nickname_submit_button, nickname_submit_button.custom_minimum_size, 20)
 
 	var separator = HSeparator.new()
 	separator.custom_minimum_size = Vector2(0, 12)
@@ -133,14 +133,14 @@ func _build_layout():
 		avatar_submit_requested.emit(_selected_avatar_id)
 	)
 	vbox.add_child(avatar_submit_button)
-	ActionButtonTemplate.apply_profile_blue(avatar_submit_button, avatar_submit_button.custom_minimum_size, 20)
+	ACTION_BUTTON_TEMPLATE.apply_profile_blue(avatar_submit_button, avatar_submit_button.custom_minimum_size, 20)
 
 func _build_avatar_grid():
 	_avatar_buttons.clear()
 	for child in avatar_grid.get_children():
 		child.queue_free()
 
-	var avatar_ids: Array = AccountConfig.get_available_avatar_ids()
+	var avatar_ids: Array = ACCOUNT_CONFIG_SCRIPT.get_available_avatar_ids()
 	avatar_ids.sort()
 	for avatar_id_variant in avatar_ids:
 		var avatar_id = str(avatar_id_variant)
@@ -169,7 +169,7 @@ func _build_avatar_grid():
 		avatar_texture.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		avatar_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		avatar_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var tex = load(AccountConfig.get_avatar_path(avatar_id))
+		var tex = load(ACCOUNT_CONFIG_SCRIPT.get_avatar_path(avatar_id))
 		if tex:
 			avatar_texture.texture = tex
 		btn.add_child(avatar_texture)
@@ -196,7 +196,7 @@ func _refresh_avatar_selection():
 		btn.add_theme_stylebox_override("pressed", _make_avatar_style(true))
 
 func _apply_styles():
-	add_theme_stylebox_override("panel", PopupStyleTemplate.build_panel_style({
+	add_theme_stylebox_override("panel", POPUP_STYLE_TEMPLATE.build_panel_style({
 		"bg_color": COLOR_PANEL_BG,
 		"border_color": COLOR_PANEL_BORDER,
 		"corner_radius": 12,
@@ -205,7 +205,7 @@ func _apply_styles():
 
 func show_popup(current_nickname: String, current_avatar_id: String):
 	if not _avatar_buttons.has(current_avatar_id):
-		current_avatar_id = AccountConfig.get_default_avatar_id()
+		current_avatar_id = ACCOUNT_CONFIG_SCRIPT.get_default_avatar_id()
 	_selected_avatar_id = current_avatar_id
 	nickname_input.text = current_nickname
 	_refresh_avatar_selection()
@@ -234,7 +234,7 @@ func _on_viewport_size_changed():
 		_update_layout()
 
 func _update_layout():
-	var safe_rect := SafeAreaHelper.get_safe_inner_rect(self)
+	var safe_rect := SAFE_AREA_HELPER.get_safe_inner_rect(self)
 	var viewport_size = safe_rect.size
 	var desired_w = clamp(viewport_size.x * 0.74, 420.0, 620.0)
 	var desired_h = clamp(viewport_size.y * 0.82, 520.0, 760.0)

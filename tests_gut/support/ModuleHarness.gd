@@ -2,17 +2,17 @@ extends Node
 
 class_name ModuleHarness
 
-const MainScene = preload("res://scenes/app/Main.tscn")
-const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
-const TestSessionHelper = preload("res://tests_gut/support/session_helper.gd")
-const TestServerClient = preload("res://tests_gut/support/server_client.gd")
-const ServerStateAdapter = preload("res://tests_gut/support/server_state_adapter.gd")
+const MAIN_SCENE = preload("res://scenes/app/Main.tscn")
+const SERVER_CONFIG_SCRIPT = preload("res://scripts/network/ServerConfig.gd")
+const TEST_SESSION_HELPER_SCRIPT = preload("res://tests_gut/support/SessionHelper.gd")
+const TEST_SERVER_CLIENT_SCRIPT = preload("res://tests_gut/support/ServerClient.gd")
+const SERVER_STATE_ADAPTER_SCRIPT = preload("res://tests_gut/support/ServerStateAdapter.gd")
 
-var client: TestServerClient = null
+var client: ServerClient = null
 var game_ui: Control = null
 
-func bootstrap(api_base: String = ServerConfig.DEFAULT_API_BASE, preset_name: String = "") -> void:
-	TestSessionHelper.reset_local_session(api_base)
+func bootstrap(api_base: String = SERVER_CONFIG_SCRIPT.DEFAULT_API_BASE, preset_name: String = "") -> void:
+	TEST_SESSION_HELPER_SCRIPT.reset_local_session(api_base)
 	await _ensure_client(api_base)
 	var login_result = await client.login_test_account()
 	if not login_result.get("success", false):
@@ -47,7 +47,7 @@ func cleanup() -> void:
 		if is_instance_valid(child):
 			remove_child(child)
 			child.free()
-	TestSessionHelper.reset_local_session()
+	TEST_SESSION_HELPER_SCRIPT.reset_local_session()
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -98,7 +98,7 @@ func sync_full_state() -> Dictionary:
 	if game_ui and game_ui.has_method("refresh_all_player_data"):
 		await game_ui.refresh_all_player_data()
 		return {"success": true}
-	return await ServerStateAdapter.sync_full_state(client, get_game_manager())
+	return await SERVER_STATE_ADAPTER_SCRIPT.sync_full_state(client, get_game_manager())
 
 func clear_logs() -> void:
 	var log_manager = get_log_manager()
@@ -153,7 +153,7 @@ func _ensure_client(api_base: String) -> void:
 	if client and is_instance_valid(client):
 		await client.configure(api_base)
 		return
-	client = TestServerClient.new()
+	client = TEST_SERVER_CLIENT_SCRIPT.new()
 	client.name = "TestServerClient"
 	add_child(client)
 	await client.configure(api_base)
@@ -164,7 +164,7 @@ func _spawn_game_ui() -> void:
 			remove_child(game_ui)
 		game_ui.free()
 		await get_tree().process_frame
-	game_ui = MainScene.instantiate()
+	game_ui = MAIN_SCENE.instantiate()
 	game_ui.name = "TestMainUI"
 	add_child(game_ui)
 	await get_tree().process_frame

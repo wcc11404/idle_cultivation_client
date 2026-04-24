@@ -1,8 +1,8 @@
 extends GutTest
 
-const ModuleHarness = preload("res://tests_gut/support/module_harness.gd")
-const ServerConfig = preload("res://scripts/network/ServerConfig.gd")
-const NetworkManager = preload("res://scripts/network/NetworkManager.gd")
+const MODULE_HARNESS = preload("res://tests_gut/support/ModuleHarness.gd")
+const SERVER_CONFIG_SCRIPT = preload("res://scripts/network/ServerConfig.gd")
+const NETWORK_MANAGER_SCRIPT = preload("res://scripts/network/NetworkManager.gd")
 
 class FakeRankApi:
 	extends Node
@@ -49,7 +49,7 @@ class FakeAuthApi:
 var harness: ModuleHarness = null
 
 func before_each():
-	harness = ModuleHarness.new()
+	harness = MODULE_HARNESS.new()
 	add_child(harness)
 	await harness.bootstrap()
 
@@ -101,11 +101,11 @@ func test_rank_success_empty_shows_no_data_message():
 
 func test_logout_clears_local_token_file():
 	var module = harness.game_ui.settings_module
-	assert_true(FileAccess.file_exists(ServerConfig.TOKEN_FILE), "测试前应已存在本地 token")
+	assert_true(FileAccess.file_exists(SERVER_CONFIG_SCRIPT.TOKEN_FILE), "测试前应已存在本地 token")
 
 	await module._on_logout_pressed()
 
-	assert_false(FileAccess.file_exists(ServerConfig.TOKEN_FILE), "登出后应清理本地 token 文件")
+	assert_false(FileAccess.file_exists(SERVER_CONFIG_SCRIPT.TOKEN_FILE), "登出后应清理本地 token 文件")
 
 func test_change_nickname_auth_invalid_uses_network_chain_and_stays_silent():
 	var game_ui = harness.game_ui

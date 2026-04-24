@@ -1,6 +1,6 @@
 class_name PlayerData extends Node
 
-const AttributeCalculator = preload("res://scripts/core/shared/AttributeCalculator.gd")
+const ATTRIBUTE_CALCULATOR = preload("res://scripts/core/shared/AttributeCalculator.gd")
 
 var realm: String = "炼气期"
 var realm_level: int = 1
@@ -70,13 +70,13 @@ func _load_base_attributes():
 		base_spirit_gain = 1.0
 
 func _load_static_attributes():
-	static_max_health = AttributeCalculator.calculate_final_max_health(self)
-	static_max_spirit_energy = AttributeCalculator.calculate_final_max_spirit_energy(self)
-	static_attack = AttributeCalculator.calculate_final_attack(self)
-	static_defense = AttributeCalculator.calculate_final_defense(self)
-	static_speed = AttributeCalculator.calculate_final_speed(self)
+	static_max_health = ATTRIBUTE_CALCULATOR.calculate_final_max_health(self)
+	static_max_spirit_energy = ATTRIBUTE_CALCULATOR.calculate_final_max_spirit_energy(self)
+	static_attack = ATTRIBUTE_CALCULATOR.calculate_final_attack(self)
+	static_defense = ATTRIBUTE_CALCULATOR.calculate_final_defense(self)
+	static_speed = ATTRIBUTE_CALCULATOR.calculate_final_speed(self)
 	static_health_regen_per_second = base_health_regen
-	static_spirit_gain_speed = AttributeCalculator.calculate_final_spirit_gain_speed(self)
+	static_spirit_gain_speed = ATTRIBUTE_CALCULATOR.calculate_final_spirit_gain_speed(self)
 	
 	health = min(health, static_max_health)
 
@@ -187,16 +187,16 @@ func get_static_health_regen_per_second() -> float:
 # 战斗最终能力值 = 静态最终能力值 + 战斗临时Buff
 
 func get_combat_attack() -> float:
-	return AttributeCalculator.calculate_combat_attack(self, combat_buffs)
+	return ATTRIBUTE_CALCULATOR.calculate_combat_attack(self, combat_buffs)
 
 func get_combat_defense() -> float:
-	return AttributeCalculator.calculate_combat_defense(self, combat_buffs)
+	return ATTRIBUTE_CALCULATOR.calculate_combat_defense(self, combat_buffs)
 
 func get_combat_speed() -> float:
-	return AttributeCalculator.calculate_combat_speed(self, combat_buffs)
+	return ATTRIBUTE_CALCULATOR.calculate_combat_speed(self, combat_buffs)
 
 func get_combat_max_health() -> float:
-	return AttributeCalculator.calculate_combat_max_health(self, combat_buffs)
+	return ATTRIBUTE_CALCULATOR.calculate_combat_max_health(self, combat_buffs)
 
 # ==================== 气血管理方法 ====================
 

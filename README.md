@@ -63,5 +63,5 @@ idle_cultivation_client/
 
 ## 相关文档
 
-- `docs/README.md`：文档总索引（推荐入口）
+- 第一次接手这个项目，建议先看 `docs/快速开发手册.md`
 - `docs/todo/瘦身计划.md`：客户端瘦身实施记录与约束

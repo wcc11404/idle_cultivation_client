@@ -1,6 +1,6 @@
 extends GutTest
 
-const ModuleHarness = preload("res://tests_gut/support/module_harness.gd")
+const MODULE_HARNESS = preload("res://tests_gut/support/ModuleHarness.gd")
 
 var harness: ModuleHarness = null
 
@@ -15,7 +15,7 @@ func _toggle_and_get_last_log(module, retries: int = 3, retry_wait: float = 0.12
 	return harness.last_log()
 
 func before_each():
-	harness = ModuleHarness.new()
+	harness = MODULE_HARNESS.new()
 	add_child(harness)
 	await harness.bootstrap("http://localhost:8444/api", "spell_ready")
 
@@ -85,3 +85,44 @@ func test_spell_upgrade_and_charge_failure_messages_use_reason_code_copy():
 	var charge_result = await harness.client.spell_charge("basic_boxing_techniques", 1)
 	assert_false(charge_result.get("success", true), "自身灵气为0时充灵应失败")
 	assert_true(module._get_spell_result_text(charge_result, "").contains("自身灵气不足"), "充灵失败应输出结构化灵气不足文案")
+
+func test_spell_detail_popup_upgrade_conditions_sync_after_unlock_and_charge():
+	await harness.reset_and_sync()
+	var module = harness.game_ui.spell_module
+
+	var set_items = await harness.client.test_post("/test/set_inventory_items", {
+		"items": {
+			"spell_basic_breathing": 1
+		}
+	})
+	assert_true(set_items.get("success", false), "应能补发基础吐纳术法书")
+
+	var set_player = await harness.client.test_post("/test/set_player_state", {
+		"spirit_energy": 10
+	})
+	assert_true(set_player.get("success", false), "应能构造足够灵气状态")
+
+	await harness.sync_full_state()
+
+	var use_result = await harness.client.inventory_use("spell_basic_breathing")
+	assert_true(use_result.get("success", false), "应能解锁基础吐纳")
+	await harness.sync_full_state()
+
+	module.current_viewing_spell = "basic_breathing"
+	module._show_spell_detail("basic_breathing")
+	await get_tree().process_frame
+
+	var popup = module.spell_detail_popup
+	assert_not_null(popup, "应创建术法详情弹窗")
+
+	var use_count_label = popup.vbox.get_node_or_null("UpgradeConditionsBox/UseCountRow/UseCountValueLabel") if popup and popup.vbox else null
+	var spirit_amount_label = popup.vbox.get_node_or_null("UpgradeConditionsBox/SpiritChargeRow/SpiritAmountLabel") if popup and popup.vbox else null
+	assert_not_null(use_count_label, "弹窗应包含使用次数标签")
+	assert_not_null(spirit_amount_label, "弹窗应包含所需灵气标签")
+	assert_eq(use_count_label.text, "0 / 50", "解锁后升级条件不应继续显示 0 / 0")
+	assert_eq(spirit_amount_label.text, "0 / 1", "解锁后充灵条件不应继续显示 0 / 0")
+
+	await module._on_spell_charge_pressed()
+	await get_tree().process_frame
+
+	assert_eq(spirit_amount_label.text, "1 / 1", "充灵后弹窗应实时反映充灵进度")

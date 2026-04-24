@@ -1,11 +1,11 @@
 extends GutTest
 
-const ModuleHarness = preload("res://tests_gut/support/module_harness.gd")
+const MODULE_HARNESS = preload("res://tests_gut/support/ModuleHarness.gd")
 
 var harness: ModuleHarness = null
 
 func before_each():
-	harness = ModuleHarness.new()
+	harness = MODULE_HARNESS.new()
 	add_child(harness)
 	await harness.bootstrap()
 

@@ -33,6 +33,7 @@ HOME="${TEST_HOME}" "${GODOT_EXEC}" \
   --path "${PROJECT_DIR}" \
   --script res://addons/gut/gut_cmdln.gd \
   -gdir=res://tests_gut \
+  -gprefix=Test \
   -ginclude_subdirs \
   -gexit \
   "$@"
