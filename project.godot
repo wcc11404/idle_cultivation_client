@@ -25,6 +25,7 @@ config/icon="res://assets/icon.png"
 
 GameManager="*res://scripts/autoload/GameManager.gd"
 GlobalNetworkManager="*res://scripts/network/NetworkManager.gd"
+ClickDebounce="*res://scripts/autoload/ClickDebounce.gd"
 
 [display]
 

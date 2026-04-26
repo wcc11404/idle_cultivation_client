@@ -4,6 +4,91 @@
 
 [sub_resource type="LabelSettings" id="LabelSettings_km46s"]
 font_size = 32
+font_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_panel"]
+bg_color = Color(0.94902, 0.898039, 0.8, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.713726, 0.639216, 0.513726, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_button_yellow_normal"]
+bg_color = Color(0.807843, 0.627451, 0.188235, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.658824, 0.505882, 0.14902, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_button_yellow_pressed"]
+bg_color = Color(0.729412, 0.560784, 0.172549, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.588235, 0.447059, 0.133333, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_button_yellow_hover"]
+bg_color = Color(0.85098, 0.666667, 0.2, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.658824, 0.505882, 0.14902, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_button_red_normal"]
+bg_color = Color(0.77, 0.67, 0.54, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.64, 0.54, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_button_red_pressed"]
+bg_color = Color(0.7, 0.61, 0.49, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.56, 0.47, 0.37, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_button_red_hover"]
+bg_color = Color(0.81, 0.71, 0.58, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.64, 0.54, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [node name="Login" type="Control" unique_id=1630876804]
 layout_mode = 3
@@ -14,6 +99,15 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gvq1e")
 
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.917647, 0.854902, 0.72549, 1)
+
 [node name="Panel" type="Panel" parent="." unique_id=1823076485]
 layout_mode = 1
 anchors_preset = 8
@@ -22,11 +116,12 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -250.0
-offset_top = -225.0
+offset_top = -220.0
 offset_right = 250.0
-offset_bottom = 225.0
+offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_login_panel")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=1951553661]
 layout_mode = 1
@@ -36,19 +131,25 @@ anchor_bottom = 1.0
 offset_left = 50.0
 offset_top = 30.0
 offset_right = -50.0
-offset_bottom = -30.0
+offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Title" type="Label" parent="Panel/VBoxContainer" unique_id=1875840751]
 layout_mode = 2
-text = "修仙挂机游戏"
+text = "坐忘仙途"
 label_settings = SubResource("LabelSettings_km46s")
 horizontal_alignment = 1
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="TitleBottomSpacer" type="Control" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
 
 [node name="UsernameLabel" type="Label" parent="Panel/VBoxContainer" unique_id=1069104584]
 layout_mode = 2
 text = "用户名"
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 
 [node name="UsernameInput" type="LineEdit" parent="Panel/VBoxContainer" unique_id=2127030832]
 layout_mode = 2
@@ -57,42 +158,40 @@ placeholder_text = "请输入用户名"
 [node name="PasswordLabel" type="Label" parent="Panel/VBoxContainer" unique_id=782669155]
 layout_mode = 2
 text = "密码"
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 
 [node name="PasswordInput" type="LineEdit" parent="Panel/VBoxContainer" unique_id=421408439]
 layout_mode = 2
 placeholder_text = "请输入密码"
 secret = true
 
-[node name="ServerIPLabel" type="Label" parent="Panel/VBoxContainer" unique_id=300301647]
+[node name="ButtonsTopSpacer" type="Control" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
-text = "服务器IP"
-
-[node name="ServerIPInput" type="LineEdit" parent="Panel/VBoxContainer" unique_id=1417735697]
-layout_mode = 2
-placeholder_text = "请输入服务器IP，例如：http://127.0.0.1:8444/api"
-
-[node name="ServerIPHBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer" unique_id=624659243]
-layout_mode = 2
-alignment = 1
-
-[node name="ServerIPConfirmButton" type="Button" parent="Panel/VBoxContainer/ServerIPHBoxContainer" unique_id=158506788]
-custom_minimum_size = Vector2(150, 45)
-layout_mode = 2
-text = "确认服务器IP"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer" unique_id=761143815]
 layout_mode = 2
 alignment = 1
 
 [node name="LoginButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer" unique_id=802450035]
-custom_minimum_size = Vector2(75, 45)
+custom_minimum_size = Vector2(130, 44)
 layout_mode = 2
 text = "登录"
+theme_override_colors/font_color = Color(0.98, 0.95, 0.86, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_login_button_yellow_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_login_button_yellow_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_login_button_yellow_hover")
 
 [node name="RegisterButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer" unique_id=1516831176]
-custom_minimum_size = Vector2(75, 45)
+custom_minimum_size = Vector2(130, 44)
 layout_mode = 2
 text = "注册"
+theme_override_colors/font_color = Color(0.98, 0.95, 0.86, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_login_button_red_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_login_button_red_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_login_button_red_hover")
 
 [node name="MessageLabel" type="Label" parent="Panel" unique_id=1940979042]
 layout_mode = 1
@@ -102,9 +201,60 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -200.0
-offset_top = -50.0
+offset_top = -44.0
 offset_right = 200.0
-offset_bottom = -30.0
+offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 0
 horizontal_alignment = 1
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="ServerPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = 180.0
+offset_right = 250.0
+offset_bottom = 330.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_login_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ServerPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = 20.0
+offset_right = -50.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ServerIPLabel" type="Label" parent="ServerPanel/VBoxContainer" unique_id=300301647]
+layout_mode = 2
+text = "服务器IP"
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+
+[node name="ServerIPInput" type="LineEdit" parent="ServerPanel/VBoxContainer" unique_id=1417735697]
+layout_mode = 2
+placeholder_text = "请输入服务器IP，例如：http://127.0.0.1:8444/api"
+
+[node name="ServerIPHBoxContainer" type="HBoxContainer" parent="ServerPanel/VBoxContainer" unique_id=624659243]
+layout_mode = 2
+alignment = 1
+
+[node name="ServerIPConfirmButton" type="Button" parent="ServerPanel/VBoxContainer/ServerIPHBoxContainer" unique_id=158506788]
+custom_minimum_size = Vector2(180, 44)
+layout_mode = 2
+text = "确认服务器IP"
+theme_override_colors/font_color = Color(0.98, 0.95, 0.86, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_login_button_yellow_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_login_button_yellow_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_login_button_yellow_hover")

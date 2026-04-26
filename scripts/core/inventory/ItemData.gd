@@ -47,6 +47,28 @@ func get_item_type(item_id: String) -> int:
 	var data = get_item_data(item_id)
 	return data.get("type", ItemType.MATERIAL)
 
+func get_item_type_name(item_id: String) -> String:
+	return get_item_type_name_by_value(get_item_type(item_id))
+
+func get_item_type_name_by_value(item_type: int) -> String:
+	match item_type:
+		ItemType.CURRENCY:
+			return "货币"
+		ItemType.MATERIAL:
+			return "材料"
+		ItemType.CONSUMABLE:
+			return "消耗品"
+		ItemType.GIFT:
+			return "宝箱/礼包"
+		ItemType.UNLOCK_SPELL:
+			return "解锁术法"
+		ItemType.UNLOCK_RECIPE:
+			return "解锁丹方"
+		ItemType.UNLOCK_FURNACE:
+			return "解锁炼丹炉"
+		_:
+			return "未知"
+
 func get_max_stack(item_id: String) -> int:
 	var data = get_item_data(item_id)
 	return int(data.get("max_stack", 1))

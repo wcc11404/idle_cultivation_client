@@ -50,6 +50,10 @@ export GODOT_TEST_HOME="$(pwd)/.godot_test_home"
   - 连战等待态推进
 - 百草山采集
   - 采集点卡片渲染、互斥提示、开始/report/停止主链路
+- 仙务司任务
+  - 每日/新手双页签渲染
+  - 领取后全量刷新
+  - 已领取任务下沉排序
 - 设置（改昵称、排行榜、登出）
 - 顶部账号弹窗
   - 改昵称 API 化已覆盖（成功/非法昵称/鉴权技术错误链）
@@ -60,6 +64,8 @@ export GODOT_TEST_HOME="$(pwd)/.godot_test_home"
   - `AUTH_TOKEN_INVALID` / `AUTH_KICKED_OUT` 统一处理
   - 技术错误 UI 提示节流
   - `alchemy_report` / `lianli_finish` 单次延迟重试策略
+- 通用点击防抖
+  - `ClickDebounceUtils`（0.2s）单测覆盖：首次放行、窗口内拦截、窗口后放行、按 key 隔离、重置行为
 
 ## 当前未自动化覆盖的 UI 风险
 

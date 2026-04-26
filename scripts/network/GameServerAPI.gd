@@ -158,6 +158,9 @@ func lianli_simulate(area_id: String) -> Dictionary:
 		"area_id": area_id
 	}, _critical_options())
 
+func lianli_speed_options() -> Dictionary:
+	return await network_manager.request("GET", "/game/lianli/speed_options", {}, _critical_options())
+
 func lianli_finish(speed: float, index = null) -> Dictionary:
 	# index 语义：
 	# - null: 完整结算（服务端按完整时间轴校验）
@@ -189,3 +192,13 @@ func herb_report() -> Dictionary:
 
 func herb_stop() -> Dictionary:
 	return await network_manager.request("POST", "/game/herb/stop", {}, _critical_options())
+
+# ==================== 任务 ====================
+
+func task_list() -> Dictionary:
+	return await network_manager.request("GET", "/game/task/list", {}, _critical_options())
+
+func task_claim(task_id: String) -> Dictionary:
+	return await network_manager.request("POST", "/game/task/claim", {
+		"task_id": task_id
+	}, _critical_options())

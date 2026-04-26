@@ -82,3 +82,12 @@ func test_lianli_finish_includes_negative_index_for_cancel_before_action():
 
 	var body = mock_network_manager.calls[0].get("body", {})
 	assert_eq(int(body.get("index", 0)), -1, "首帧退出应显式上传 index=-1")
+
+func test_lianli_speed_options_uses_get_endpoint():
+	var result = await api.lianli_speed_options()
+	assert_true(result.get("success", false), "mock 请求应返回成功")
+	assert_eq(mock_network_manager.calls.size(), 1, "应只发起一次请求")
+
+	var call = mock_network_manager.calls[0]
+	assert_eq(call.get("method", ""), "GET", "历练倍速选项应走 GET")
+	assert_eq(call.get("endpoint", ""), "/game/lianli/speed_options", "历练倍速选项接口路径应正确")

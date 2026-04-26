@@ -3,13 +3,15 @@ extends Control
 const GAME_SERVER_API_SCRIPT = preload("res://scripts/network/GameServerAPI.gd")
 const SERVER_CONFIG_SCRIPT = preload("res://scripts/network/ServerConfig.gd")
 const UI_FONT_PROVIDER = preload("res://scripts/ui/common/UIFontProvider.gd")
+const CLICK_DEBOUNCE_UTILS := preload("res://scripts/utils/ClickDebounceUtils.gd")
+const CLICK_DEBOUNCE_MS := 200
 
 var api: GameServerAPI = null
 
 @onready var username_input = $Panel/VBoxContainer/UsernameInput
 @onready var password_input = $Panel/VBoxContainer/PasswordInput
-@onready var server_ip_input = $Panel/VBoxContainer/ServerIPInput
-@onready var server_ip_confirm_button = $Panel/VBoxContainer/ServerIPHBoxContainer/ServerIPConfirmButton
+@onready var server_ip_input = $ServerPanel/VBoxContainer/ServerIPInput
+@onready var server_ip_confirm_button = $ServerPanel/VBoxContainer/ServerIPHBoxContainer/ServerIPConfirmButton
 @onready var login_button = $Panel/VBoxContainer/HBoxContainer/LoginButton
 @onready var register_button = $Panel/VBoxContainer/HBoxContainer/RegisterButton
 @onready var message_label = $Panel/MessageLabel
@@ -52,6 +54,11 @@ func _ready():
 	UI_FONT_PROVIDER.apply_to_root(self)
 	api = GAME_SERVER_API_SCRIPT.new()
 	add_child(api)
+
+	# 防止跨场景或跨测试复用静态防抖状态，进入登录页时重置本页动作键。
+	CLICK_DEBOUNCE_UTILS.reset_action("login_ui_login_button")
+	CLICK_DEBOUNCE_UTILS.reset_action("login_ui_register_button")
+	CLICK_DEBOUNCE_UTILS.reset_action("login_ui_server_confirm_button")
 	
 	# 连接信号
 	login_button.pressed.connect(_on_login_pressed)
@@ -98,6 +105,9 @@ func check_auto_login():
 		show_message("请登录账号")
 
 func _on_login_pressed():
+	if not CLICK_DEBOUNCE_UTILS.should_accept("login_ui_login_button", CLICK_DEBOUNCE_MS):
+		return
+
 	var username = username_input.text.strip_edges()
 	var password = password_input.text
 	
@@ -139,6 +149,9 @@ func _on_login_pressed():
 			show_message("登录异常，请检查网络或稍后重试")
 
 func _on_register_pressed():
+	if not CLICK_DEBOUNCE_UTILS.should_accept("login_ui_register_button", CLICK_DEBOUNCE_MS):
+		return
+
 	var username = username_input.text.strip_edges()
 	var password = password_input.text
 	
@@ -251,6 +264,9 @@ func _decrypt_password(encrypted: String) -> String:
 	return decrypted
 
 func _on_server_ip_confirm_pressed():
+	if not CLICK_DEBOUNCE_UTILS.should_accept("login_ui_server_confirm_button", CLICK_DEBOUNCE_MS):
+		return
+
 	# 处理服务器IP确认按钮点击事件
 	var server_ip = server_ip_input.text.strip_edges()
 	if server_ip.is_empty():

@@ -2,7 +2,7 @@ class_name HerbGatherModule
 extends Node
 
 const ACTION_BUTTON_TEMPLATE = preload("res://scripts/ui/common/ActionButtonTemplate.gd")
-const SPELL_THUMBNAIL_TEMPLATE = preload("res://scripts/ui/common/SpellThumbnailTemplate.gd")
+const DISPLAY_PANEL_TEMPLATE = preload("res://scripts/ui/common/DisplayPanelTemplate.gd")
 
 signal log_message(message: String)
 signal back_to_region_requested
@@ -191,33 +191,71 @@ func _render_cards():
 	for point_id in point_ids:
 		var point = _points_config.get(point_id, {})
 		var card = PanelContainer.new()
-		card.custom_minimum_size = Vector2(0, 210)
+		card.custom_minimum_size = Vector2(0, 192)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		SPELL_THUMBNAIL_TEMPLATE.apply_to_card(card)
+		card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+		var card_style := StyleBoxFlat.new()
+		card_style.bg_color = Color(0.95, 0.90, 0.80, 1.0)
+		card_style.border_color = Color(0.76, 0.66, 0.51, 1.0)
+		card_style.set_border_width_all(1)
+		card_style.set_corner_radius_all(12)
+		card.add_theme_stylebox_override("panel", card_style)
 
 		var margin = MarginContainer.new()
 		margin.add_theme_constant_override("margin_left", 16)
-		margin.add_theme_constant_override("margin_top", 14)
+		margin.add_theme_constant_override("margin_top", 12)
 		margin.add_theme_constant_override("margin_right", 16)
-		margin.add_theme_constant_override("margin_bottom", 14)
+		margin.add_theme_constant_override("margin_bottom", 8)
 		card.add_child(margin)
 
-		var vbox = VBoxContainer.new()
-		vbox.add_theme_constant_override("separation", 8)
-		margin.add_child(vbox)
+		var main_hbox := HBoxContainer.new()
+		main_hbox.add_theme_constant_override("separation", 14)
+		margin.add_child(main_hbox)
 
-		var name_label = Label.new()
-		name_label.text = str(point.get("name", point_id))
-		name_label.add_theme_font_size_override("font_size", 24)
-		name_label.add_theme_color_override("font_color", Color(0.22, 0.2, 0.18, 1.0))
-		vbox.add_child(name_label)
+		var left_vbox := VBoxContainer.new()
+		left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		left_vbox.add_theme_constant_override("separation", 6)
+		main_hbox.add_child(left_vbox)
+
+		var header_row := HBoxContainer.new()
+		var header_accent := ColorRect.new()
+		header_accent.name = "HeaderAccent"
+		var header_title := Label.new()
+		header_title.name = "HeaderTitle"
+		var header_line := HSeparator.new()
+		header_line.name = "HeaderLine"
+		header_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		header_row.add_child(header_accent)
+		header_row.add_child(header_title)
+		header_row.add_child(header_line)
+		left_vbox.add_child(header_row)
+
+		var header_config := DISPLAY_PANEL_TEMPLATE.build_standard_header_config({
+			"title_text": str(point.get("name", point_id)),
+			"title_font_size": 20,
+		})
+		DISPLAY_PANEL_TEMPLATE.apply_to_row(header_row, header_config)
+		header_title.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1, 1.0))
+
+		var content_margin := MarginContainer.new()
+		content_margin.add_theme_constant_override(
+			"margin_left",
+			DISPLAY_PANEL_TEMPLATE.get_content_left_inset_from_header_config(header_config)
+		)
+		left_vbox.add_child(content_margin)
+
+		var content_vbox := VBoxContainer.new()
+		content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		content_vbox.add_theme_constant_override("separation", 6)
+		content_margin.add_child(content_vbox)
 
 		var desc_label = Label.new()
 		desc_label.text = str(point.get("description", ""))
 		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.add_theme_font_size_override("font_size", 18)
 		desc_label.add_theme_color_override("font_color", Color(0.35, 0.33, 0.3, 1.0))
-		vbox.add_child(desc_label)
+		content_vbox.add_child(desc_label)
 
 		var info_label = RichTextLabel.new()
 		info_label.bbcode_enabled = true
@@ -227,31 +265,32 @@ func _render_cards():
 		info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info_label.add_theme_font_size_override("normal_font_size", 17)
 		info_label.add_theme_color_override("default_color", Color(0.25, 0.23, 0.2, 1.0))
-		vbox.add_child(info_label)
+		content_vbox.add_child(info_label)
 
 		var progress_bar = ProgressBar.new()
 		progress_bar.custom_minimum_size = Vector2(0, 18)
 		progress_bar.max_value = 100.0
 		progress_bar.value = 0.0
 		progress_bar.show_percentage = false
-		vbox.add_child(progress_bar)
+		content_vbox.add_child(progress_bar)
 
-		var actions = HBoxContainer.new()
-		actions.alignment = BoxContainer.ALIGNMENT_END
-		actions.add_theme_constant_override("separation", 10)
-		vbox.add_child(actions)
+		var right_vbox := VBoxContainer.new()
+		right_vbox.custom_minimum_size = Vector2(140, 0)
+		right_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		right_vbox.add_theme_constant_override("separation", 10)
+		main_hbox.add_child(right_vbox)
 
 		var start_button = Button.new()
 		start_button.text = "开始采集"
 		ACTION_BUTTON_TEMPLATE.apply_alchemy_green(start_button, Vector2(130, 42), 18)
 		start_button.pressed.connect(_on_start_pressed.bind(point_id))
-		actions.add_child(start_button)
+		right_vbox.add_child(start_button)
 
 		var stop_button = Button.new()
 		stop_button.text = "停止采集"
 		ACTION_BUTTON_TEMPLATE.apply_breakthrough_red(stop_button, Vector2(130, 42), 18)
 		stop_button.pressed.connect(_on_stop_pressed)
-		actions.add_child(stop_button)
+		right_vbox.add_child(stop_button)
 
 		point_list.add_child(card)
 		_card_refs[point_id] = {

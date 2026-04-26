@@ -138,26 +138,6 @@ func get_item_list() -> Array:
 		})
 	return result
 
-func sort_by_id():
-	var items = []
-	for i in range(capacity):
-		if not slots[i]["empty"]:
-			items.append({
-				"id": slots[i]["id"],
-				"count": slots[i]["count"]
-			})
-	
-	items.sort_custom(func(a, b): return a["id"] < b["id"])
-	
-	for i in range(capacity):
-		slots[i] = {"empty": true, "id": "", "count": 0}
-	
-	var index = 0
-	for item in items:
-		if index < capacity:
-			slots[index] = {"empty": false, "id": item["id"], "count": item["count"]}
-			index += 1
-
 func clear():
 	for i in range(MAX_SIZE):
 		slots[i] = {"empty": true, "id": "", "count": 0}

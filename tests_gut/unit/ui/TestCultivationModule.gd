@@ -123,3 +123,30 @@ func test_cultivation_invalid_report_waits_for_next_window_without_immediate_ret
 	await module._process(0.1)
 	await get_tree().process_frame
 	assert_eq(harness.client.get_call_count("cultivation_report"), 1, "失败后应等待下一个上报窗口，不做立即重试")
+
+func test_cultivation_optimistic_progress_uses_exact_health_regen_and_rounds_spirit():
+	var module = harness.game_ui.cultivation_module
+	var player = harness.get_player()
+	var spell_system = harness.get_spell_system()
+
+	player.realm = "筑基期"
+	player.realm_level = 1
+	spell_system.player_spells["basic_breathing"] = {
+		"obtained": true,
+		"level": 2,
+		"use_count": 0,
+		"charged_spirit": 0
+	}
+	spell_system.equipped_spells["breathing"] = ["basic_breathing"]
+	spell_system.recalculate_bonuses()
+
+	player.health = 50.0
+	player.spirit_energy = 0.0
+
+	var expected_health = round((50.0 + module.CULTIVATION_LOGIC.calculate_health_regen_per_second(player, spell_system)) * 100.0) / 100.0
+	var expected_spirit = round(module.CULTIVATION_LOGIC.calculate_spirit_gain_per_second(player) * 100.0) / 100.0
+
+	module._apply_optimistic_progress(1.0)
+
+	assert_eq(player.health, expected_health, "第一秒乐观回血应直接按浮点值结算，不应再走整数跳点")
+	assert_eq(player.spirit_energy, expected_spirit, "灵气乐观更新应在每次累加后收口到两位小数")

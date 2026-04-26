@@ -35,6 +35,9 @@ var cultivation_active: bool = false
 # 战斗临时Buff（由LianliSystem管理）
 var combat_buffs: Dictionary = {}
 
+func _round_runtime_value(value: float) -> float:
+	return round(value * 100.0) / 100.0
+
 func _ready():
 	add_to_group("player")
 	# 初始化默认值
@@ -208,19 +211,19 @@ func take_damage(damage: float) -> float:
 ## 恢复气血
 func heal(amount: float) -> float:
 	var max_health = get_final_max_health()
-	health = min(max_health, health + amount)
+	health = _round_runtime_value(min(max_health, health + amount))
 	return health
 
 ## 设置当前气血（用于战斗同步）
 func set_health(value: float) -> void:
-	health = max(0.0, value)
+	health = _round_runtime_value(max(0.0, min(value, get_final_max_health())))
 
 # ==================== 灵气管理方法 ====================
 
 ## 消耗灵气
 func consume_spirit(amount: float) -> bool:
 	if spirit_energy >= amount:
-		spirit_energy -= amount
+		spirit_energy = _round_runtime_value(max(0.0, spirit_energy - amount))
 		return true
 	return false
 
@@ -230,12 +233,12 @@ func add_spirit(amount: float) -> float:
 	# 如果当前灵气已经超过上限，直接返回，不丢失灵气
 	if spirit_energy >= max_spirit:
 		return spirit_energy
-	spirit_energy = min(max_spirit, spirit_energy + amount)
+	spirit_energy = _round_runtime_value(min(max_spirit, spirit_energy + amount))
 	return spirit_energy
 
 ## 设置当前灵气
 func set_spirit(value: float) -> void:
-	spirit_energy = max(0.0, value)
+	spirit_energy = _round_runtime_value(max(0.0, min(value, get_final_max_spirit_energy())))
 
 # ==================== 战斗Buff管理 ====================
 
@@ -265,11 +268,11 @@ func add_spirit_energy(amount: float):
 	if spirit_energy >= get_final_max_spirit_energy():
 		return
 	# 否则增加灵气，但不超过最终上限（包含术法加成）
-	spirit_energy = min(spirit_energy + amount, get_final_max_spirit_energy())
+	spirit_energy = _round_runtime_value(min(spirit_energy + amount, get_final_max_spirit_energy()))
 
 # bug丹专用：增加灵气，可以超过上限
 func add_spirit_energy_unlimited(amount: float):
-	spirit_energy += amount
+	spirit_energy = _round_runtime_value(spirit_energy + amount)
 
 func get_save_data() -> Dictionary:
 	return {

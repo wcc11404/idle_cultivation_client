@@ -124,6 +124,24 @@ func test_use_spell_book_updates_local_spell_state_immediately():
 	assert_not_null(status_label, "术法卡片应包含状态文案")
 	assert_eq(status_label.text, "Lv.1", "使用术法书后术法卡片不应继续显示未获取")
 
+func test_item_detail_panel_shows_mapped_item_type():
+	var module = harness.game_ui.chuna_module
+	var set_result = await harness.client.test_post("/test/set_inventory_items", {
+		"items": {
+			"spell_basic_health": 1
+		}
+	})
+	assert_true(set_result.get("success", false), "应能补发基础气血术法书")
+	await harness.sync_full_state()
+
+	var slot_index = FIXTURE_HELPER_SCRIPT.find_inventory_slot_index(harness.get_inventory(), "spell_basic_health")
+	assert_gt(slot_index, -1, "背包中应存在基础气血术法书")
+
+	module._select_slot(slot_index)
+	var detail_type = module.item_detail_panel.get_node_or_null("VBoxContainer/MainHBox/InfoVBox/DetailInfo/DetailType")
+	assert_not_null(detail_type, "物品详情应包含类型文本")
+	assert_eq(detail_type.text, "类型: 解锁术法", "物品详情应显示客户端类型映射")
+
 func test_duplicate_unlock_item_uses_unified_already_used_copy():
 	var module = harness.game_ui.chuna_module
 	var set_result = await harness.client.test_post("/test/set_inventory_items", {

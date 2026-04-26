@@ -49,11 +49,14 @@ var exit_lianli_button: Button = null
 
 # 状态
 var current_lianli_area_id: String = ""
-var current_lianli_speed_index: int = 0
 var current_battle_max_speed: float = 1.0
 
 # 历练速度选项
 const LIANLI_SPEEDS = [1.0, 1.5, 2.0]
+const DEFAULT_LIANLI_SPEED := 1.0
+const LIANLI_SPEED_BLOCKED_MESSAGE := "达到金丹境界以后可以开启1.5倍速，开通VIP可以开启2倍速"
+var current_lianli_speed: float = DEFAULT_LIANLI_SPEED
+var available_lianli_speeds: Array = [DEFAULT_LIANLI_SPEED]
 
 var _battle_timeline: Array = []
 var _timeline_cursor: int = 0
@@ -124,6 +127,8 @@ func _get_lianli_result_message(result: Dictionary, fallback: String = "") -> St
 			return ""
 		"LIANLI_FINISH_NOT_ACTIVE":
 			return "当前未在历练战斗中"
+		"LIANLI_FINISH_SPEED_INVALID":
+			return "当前倍速未解锁，请重新选择历练倍速"
 		"LIANLI_FINISH_TIME_INVALID":
 			return "历练结算同步异常，请稍后重试"
 		"LIANLI_FINISH_FULLY_SETTLED", "LIANLI_FINISH_PARTIALLY_SETTLED":
@@ -152,9 +157,9 @@ func initialize(ui: Node, player_node: Node, lianli_sys: Node,
 	api = game_api
 	spell_data = spell_data_node
 	spell_system = spell_system_node
-	
+	_update_lianli_speed_button_text()
 	_update_battle_info()
-	
+
 func _process(delta: float):
 	# 处理等待状态
 	if _is_waiting:
@@ -171,7 +176,7 @@ func _process(delta: float):
 	if not _is_timeline_running or _finish_in_flight:
 		return
 
-	var speed = LIANLI_SPEEDS[current_lianli_speed_index]
+	var speed = current_lianli_speed
 	_timeline_elapsed += delta * speed
 	# 更新本次战斗的最大速度
 	if speed > current_battle_max_speed:
@@ -281,16 +286,20 @@ func _animate_health_bar(bar: ProgressBar, value_label: Label, target_health: fl
 	if value_label:
 		value_label.text = _format_health_pair(clamped_target, bar.max_value)
 
+	var tween_duration = clamp(duration, 0.12, 0.35)
+
 	if is_enemy:
 		if _enemy_hp_tween:
 			_enemy_hp_tween.kill()
 		_enemy_hp_tween = create_tween()
-		_enemy_hp_tween.tween_property(bar, "value", clamped_target, max(0.03, duration))
+		_enemy_hp_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_enemy_hp_tween.tween_property(bar, "value", clamped_target, tween_duration)
 	else:
 		if _player_hp_tween:
 			_player_hp_tween.kill()
 		_player_hp_tween = create_tween()
-		_player_hp_tween.tween_property(bar, "value", clamped_target, max(0.03, duration))
+		_player_hp_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_player_hp_tween.tween_property(bar, "value", clamped_target, tween_duration)
 
 func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 	_battle_timeline = sim_result.get("battle_timeline", [])
@@ -305,7 +314,7 @@ func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 	current_lianli_area_id = area_id
 	_finish_time_invalid_prompted = false
 	# 初始化本次战斗的最大速度
-	current_battle_max_speed = LIANLI_SPEEDS[current_lianli_speed_index]
+	current_battle_max_speed = current_lianli_speed
 
 	if game_ui and game_ui.has_method("set_active_mode"):
 		game_ui.set_active_mode("lianli")
@@ -316,6 +325,7 @@ func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 		enemy_name_label.text = str(_current_enemy_data.get("name", "敌人")) + " Lv." + str(int(_current_enemy_data.get("level", 1)))
 	if enemy_health_bar:
 		var enemy_max_hp = float(_current_enemy_data.get("health", 1.0))
+		enemy_health_bar.step = 0.01
 		enemy_health_bar.max_value = enemy_max_hp
 		enemy_health_bar.value = enemy_max_hp
 	if enemy_health_value and enemy_health_bar:
@@ -324,6 +334,7 @@ func _start_timeline_from_simulation(sim_result: Dictionary, area_id: String):
 	if player and player_health_bar_lianli:
 		var player_max_hp = player.get_combat_max_health()
 		_simulated_player_max_health = player_max_hp
+		player_health_bar_lianli.step = 0.01
 		player_health_bar_lianli.max_value = player_max_hp
 		player_health_bar_lianli.value = player.health
 	if player_health_value_lianli and player_health_bar_lianli:
@@ -599,10 +610,29 @@ func is_continuous_checked() -> bool:
 
 # 历练速度按钮点击
 func on_lianli_speed_pressed():
-	current_lianli_speed_index = (current_lianli_speed_index + 1) % LIANLI_SPEEDS.size()
-	var new_speed = LIANLI_SPEEDS[current_lianli_speed_index]
-	if lianli_speed_button:
-		lianli_speed_button.text = "历练速度: " + str(new_speed) + "x"
+	if not api:
+		log_message.emit("网络接口未初始化")
+		return
+	if not _begin_action_lock("lianli_speed_switch"):
+		return
+
+	var options_ok = await _refresh_speed_options_from_server()
+	if not options_ok:
+		_action_lock.end("lianli_speed_switch", 0.0)
+		return
+
+	if available_lianli_speeds.size() <= 1:
+		log_message.emit(LIANLI_SPEED_BLOCKED_MESSAGE)
+		_action_lock.end("lianli_speed_switch", 0.0)
+		return
+
+	current_lianli_speed = _get_next_lianli_speed()
+	_update_lianli_speed_button_text()
+	_action_lock.end("lianli_speed_switch", 0.0)
+
+func on_tab_entered():
+	_update_lianli_speed_button_text()
+	call_deferred("_refresh_speed_options_on_tab_enter")
 
 # 退出历练按钮点击
 func on_exit_lianli_pressed():
@@ -641,6 +671,60 @@ func _update_battle_info():
 			_update_tower_reward_info()
 		else:
 			reward_info_label.text = _get_area_reward_text()
+
+func _refresh_speed_options_on_tab_enter():
+	await _refresh_speed_options_from_server(true)
+
+func _refresh_speed_options_from_server(silent: bool = false) -> bool:
+	if not api:
+		return false
+	var result = await api.lianli_speed_options()
+	if not result.get("success", false):
+		if not silent:
+			var err_msg = api.network_manager.get_api_error_text_for_ui(result, "历练倍速信息获取失败")
+			if not err_msg.is_empty():
+				log_message.emit(err_msg)
+		return false
+	_apply_available_lianli_speeds(result.get("available_speeds", [DEFAULT_LIANLI_SPEED]))
+	return true
+
+func _apply_available_lianli_speeds(raw_speeds: Array):
+	var sanitized: Array = []
+	for candidate in LIANLI_SPEEDS:
+		for raw_speed in raw_speeds:
+			if is_equal_approx(float(raw_speed), float(candidate)):
+				sanitized.append(float(candidate))
+				break
+	if sanitized.is_empty():
+		sanitized = [DEFAULT_LIANLI_SPEED]
+	available_lianli_speeds = sanitized
+	if not _has_lianli_speed(current_lianli_speed):
+		current_lianli_speed = DEFAULT_LIANLI_SPEED if _has_lianli_speed(DEFAULT_LIANLI_SPEED) else float(available_lianli_speeds[0])
+	_update_lianli_speed_button_text()
+
+func _has_lianli_speed(target_speed: float) -> bool:
+	for speed in available_lianli_speeds:
+		if is_equal_approx(float(speed), target_speed):
+			return true
+	return false
+
+func _get_next_lianli_speed() -> float:
+	if available_lianli_speeds.is_empty():
+		return DEFAULT_LIANLI_SPEED
+	for i in range(available_lianli_speeds.size()):
+		if is_equal_approx(float(available_lianli_speeds[i]), current_lianli_speed):
+			return float(available_lianli_speeds[(i + 1) % available_lianli_speeds.size()])
+	return float(available_lianli_speeds[0])
+
+func _update_lianli_speed_button_text():
+	if not lianli_speed_button:
+		return
+	lianli_speed_button.text = "历练速度: " + _format_speed_text(current_lianli_speed) + "x"
+
+func _format_speed_text(speed: float) -> String:
+	if is_equal_approx(speed, floor(speed)):
+		return str(int(speed))
+	return str(snapped(speed, 0.1))
 
 func on_player_data_refreshed(lianli_data: Dictionary):
 	if lianli_system and lianli_system.has_method("apply_save_data"):

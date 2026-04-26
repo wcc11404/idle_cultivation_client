@@ -667,15 +667,9 @@ func _show_item_detail(index: int):
 	if detail_desc:
 		detail_desc.text = description
 	if detail_type:
-		var type_str = ""
-		match type:
-			ItemData.ItemType.CURRENCY: type_str = "货币"
-			ItemData.ItemType.MATERIAL: type_str = "材料"
-			ItemData.ItemType.CONSUMABLE: type_str = "消耗品"
-			ItemData.ItemType.GIFT: type_str = "礼包"
-			ItemData.ItemType.UNLOCK_SPELL: type_str = "解锁术法"
-			ItemData.ItemType.UNLOCK_RECIPE: type_str = "解锁丹方"
-			ItemData.ItemType.UNLOCK_FURNACE: type_str = "解锁炼丹炉"
+		var type_str := "未知"
+		if item_data and item_data.has_method("get_item_type_name_by_value"):
+			type_str = item_data.get_item_type_name_by_value(int(type))
 		detail_type.text = "类型: " + type_str
 	if detail_count:
 		detail_count.text = "数量: " + UIUtils.format_display_number(float(count))

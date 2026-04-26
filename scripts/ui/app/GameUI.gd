@@ -10,6 +10,7 @@ const NEISHI_MODULE_SCRIPT = preload("res://scripts/ui/modules/NeishiModule.gd")
 const CULTIVATION_MODULE_SCRIPT = preload("res://scripts/ui/modules/CultivationModule.gd")
 const LIANLI_MODULE_SCRIPT = preload("res://scripts/ui/modules/LianliModule.gd")
 const HERB_GATHER_MODULE_SCRIPT = preload("res://scripts/ui/modules/HerbGatherModule.gd")
+const TASK_MODULE_SCRIPT = preload("res://scripts/ui/modules/TaskModule.gd")
 const PROFILE_EDIT_POPUP_SCRIPT = preload("res://scripts/ui/modules/ProfileEditPopup.gd")
 const GAME_SERVER_API_SCRIPT = preload("res://scripts/network/GameServerAPI.gd")
 const TAB_BAR_STYLE_TEMPLATE = preload("res://scripts/ui/common/TabBarStyleTemplate.gd")
@@ -38,6 +39,7 @@ var profile_edit_popup: ProfileEditPopup = null
 # 地区模块
 var region_module = null
 var herb_gather_module = null
+var task_module = null
 
 # 储纳模块
 var chuna_module = null
@@ -79,8 +81,9 @@ const REALM_FRAME_TEXTURES = {
 @onready var safe_bottom: Control = $SafeBottom
 @onready var safe_bottom_fill: ColorRect = $SafeBottom/BottomFill
 @onready var realm_label: Label = $ContentFrame/VBoxContainer/TopBar/TopBarContent/RealmContainer/RealmLabel
-@onready var spirit_stone_label: Label = $ContentFrame/VBoxContainer/TopBar/TopBarContent/SpiritStoneContainer/SpiritStoneLabel
-@onready var spirit_stone_icon: TextureRect = $ContentFrame/VBoxContainer/TopBar/TopBarContent/SpiritStoneContainer/SpiritStoneIcon
+@onready var spirit_stone_label: Label = $ContentFrame/VBoxContainer/TopBar/TopBarContent/CurrencyContainer/CurrencyValuesCenter/CurrencyValues/SpiritStoneLabel
+@onready var spirit_stone_icon: TextureRect = $ContentFrame/VBoxContainer/TopBar/TopBarContent/CurrencyContainer/SpiritStoneIcon
+@onready var immortal_crystal_label: Label = $ContentFrame/VBoxContainer/TopBar/TopBarContent/CurrencyContainer/CurrencyValuesCenter/CurrencyValues/ImmortalCrystalLabel
 
 @onready var status_label: Label = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/CultivationVisual/CultivationStatusLabel
 @onready var health_bar: ProgressBar = $ContentFrame/VBoxContainer/ContentPanel/NeishiPanel/CultivationContainer/StatusArea/PlayerDataContainer/VBoxContainer/HealthRow/HealthBar
@@ -130,6 +133,7 @@ const REALM_FRAME_TEXTURES = {
 @onready var chuna_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/ChunaPanel
 @onready var region_panel: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/RegionPanel")
 @onready var herb_gather_panel: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/HerbGatherPanel")
+@onready var task_panel: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/TaskPanel")
 @onready var lianli_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/LianliPanel
 @onready var settings_panel: Control = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel
 @onready var settings_scroll: ScrollContainer = $ContentFrame/VBoxContainer/ContentPanel/SettingsPanel/VBoxContainer/SettingsScroll
@@ -185,8 +189,15 @@ var view_button: Button = null
 # 炼丹房UI节点
 @onready var alchemy_workshop_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/RegionPanel/VBoxContainer/AlchemyWorkshopButton")
 @onready var herb_mountain_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/RegionPanel/VBoxContainer/HerbMountainButton")
+@onready var xianwu_office_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/RegionPanel/VBoxContainer/XianwuOfficeButton")
 @onready var herb_gather_back_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/HerbGatherPanel/VBoxContainer/TitleBar/BackButton")
 @onready var herb_gather_point_list: VBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/HerbGatherPanel/VBoxContainer/PointScroll/PointList")
+@onready var task_back_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/TaskPanel/VBoxContainer/TitleBar/BackButton")
+@onready var task_tab_bar: HBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/TaskPanel/VBoxContainer/TaskTabBar")
+@onready var task_daily_tab_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/TaskPanel/VBoxContainer/TaskTabBar/DailyTab")
+@onready var task_newbie_tab_button: Button = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/TaskPanel/VBoxContainer/TaskTabBar/NewbieTab")
+@onready var task_scroll: ScrollContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/TaskPanel/VBoxContainer/TaskScroll")
+@onready var task_list: VBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/TaskPanel/VBoxContainer/TaskScroll/TaskList")
 @onready var alchemy_room_panel: Control = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel")
 @onready var recipe_list_container: VBoxContainer = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/RecipeListPanel/RecipeListVBox/RecipeScroll/RecipeListContainer")
 @onready var recipe_name_label: Label = get_node_or_null("ContentFrame/VBoxContainer/ContentPanel/AlchemyRoomPanel/VBoxContainer/MainHBox/CraftPanel/CraftVBox/RecipeNameLabel")
@@ -240,8 +251,6 @@ var lianli_area_data: Node = null
 var enemy_data: Node = null
 
 var current_lianli_area_id: String = ""
-var current_lianli_speed_index: int = 0
-const LIANLI_SPEEDS = [1.0, 1.5, 2.0]
 var active_mode: String = "none"
 var allow_background_server_refresh: bool = true
 var _test_shutdown_requested: bool = false
@@ -272,6 +281,7 @@ func _ready():
 	setup_profile_edit_popup()
 	setup_region_module()
 	setup_herb_gather_module()
+	setup_task_module()
 	setup_chuna_module()
 	setup_spell_module()
 	setup_neishi_module()
@@ -324,9 +334,9 @@ func _setup_action_button_templates():
 func _setup_status_header_style():
 	if not status_header_row:
 		return
-	DISPLAY_PANEL_TEMPLATE.apply_to_row(status_header_row, {
+	DISPLAY_PANEL_TEMPLATE.apply_to_row(status_header_row, DISPLAY_PANEL_TEMPLATE.build_standard_header_config({
 		"title_text": "属性面板"
-	})
+	}))
 	# 展示面板模板约束：内容左侧与标题首字左侧对齐，标题下留白固定
 	DISPLAY_PANEL_TEMPLATE.apply_content_layout(
 		[status_health_left_pad, status_spirit_left_pad],
@@ -337,9 +347,9 @@ func _setup_status_header_style():
 func _setup_breakthrough_panel_style():
 	if not breakthrough_header_row:
 		return
-	DISPLAY_PANEL_TEMPLATE.apply_to_row(breakthrough_header_row, {
+	DISPLAY_PANEL_TEMPLATE.apply_to_row(breakthrough_header_row, DISPLAY_PANEL_TEMPLATE.build_standard_header_config({
 		"title_text": "突破详情"
-	})
+	}))
 	# 展示面板模板约束：内容左侧与标题首字左侧对齐，标题下留白固定
 	DISPLAY_PANEL_TEMPLATE.apply_content_layout(
 		[],
@@ -728,11 +738,13 @@ func setup_region_module():
 	region_module.region_panel = region_panel
 	region_module.alchemy_workshop_button = alchemy_workshop_button
 	region_module.herb_mountain_button = herb_mountain_button
+	region_module.xianwu_office_button = xianwu_office_button
 	
 	# 初始化模块
 	region_module.initialize(self, player, alchemy_module)
 	region_module.log_message.connect(_on_module_log)
 	region_module.herb_gather_requested.connect(_on_herb_gather_requested)
+	region_module.task_panel_requested.connect(_on_task_panel_requested)
 
 func setup_herb_gather_module():
 	herb_gather_module = HERB_GATHER_MODULE_SCRIPT.new()
@@ -747,8 +759,27 @@ func setup_herb_gather_module():
 	herb_gather_module.log_message.connect(_on_module_log)
 	herb_gather_module.back_to_region_requested.connect(_on_back_to_region_requested)
 
+func setup_task_module():
+	task_module = TASK_MODULE_SCRIPT.new()
+	task_module.name = "TaskModule"
+	add_child(task_module)
+
+	task_module.task_panel = task_panel
+	task_module.back_button = task_back_button
+	task_module.task_tab_bar = task_tab_bar
+	task_module.daily_tab_button = task_daily_tab_button
+	task_module.newbie_tab_button = task_newbie_tab_button
+	task_module.task_scroll = task_scroll
+	task_module.task_list = task_list
+	task_module.initialize(self, api)
+	task_module.log_message.connect(_on_module_log)
+	task_module.back_to_region_requested.connect(_on_back_to_region_requested)
+
 func _on_herb_gather_requested():
 	show_herb_gather_panel()
+
+func _on_task_panel_requested():
+	show_task_panel()
 
 func setup_chuna_module():
 	# 创建储纳模块
@@ -1132,6 +1163,8 @@ func show_neishi_tab():
 		region_panel.visible = false
 	if herb_gather_panel:
 		herb_gather_panel.visible = false
+	if task_panel:
+		task_panel.visible = false
 	lianli_panel.visible = false
 	settings_panel.visible = false
 	# 隐藏炼丹房
@@ -1158,6 +1191,8 @@ func show_chuna_tab():
 		region_panel.visible = false
 	if herb_gather_panel:
 		herb_gather_panel.visible = false
+	if task_panel:
+		task_panel.visible = false
 	lianli_panel.visible = false
 	settings_panel.visible = false
 	# 隐藏炼丹房
@@ -1183,6 +1218,8 @@ func show_region_tab():
 		region_panel.visible = true
 	if herb_gather_panel:
 		herb_gather_panel.visible = false
+	if task_panel:
+		task_panel.visible = false
 	lianli_panel.visible = false
 	settings_panel.visible = false
 	# 隐藏炼丹房
@@ -1205,6 +1242,8 @@ func show_lianli_tab():
 		region_panel.visible = false
 	if herb_gather_panel:
 		herb_gather_panel.visible = false
+	if task_panel:
+		task_panel.visible = false
 	lianli_panel.visible = true
 	settings_panel.visible = false
 	# 隐藏炼丹房
@@ -1226,6 +1265,7 @@ func show_lianli_tab():
 
 	# 检查是否处于历练中
 	if lianli_module:
+		lianli_module.on_tab_entered()
 		if lianli_system and lianli_system.is_in_lianli:
 			# 还在历练中，显示战斗场景
 			lianli_module.show_lianli_scene_panel()
@@ -1240,6 +1280,8 @@ func show_settings_tab():
 		region_panel.visible = false
 	if herb_gather_panel:
 		herb_gather_panel.visible = false
+	if task_panel:
+		task_panel.visible = false
 	lianli_panel.visible = false
 	settings_panel.visible = true
 	# 隐藏炼丹房
@@ -1262,6 +1304,8 @@ func show_herb_gather_panel():
 		region_panel.visible = false
 	if herb_gather_panel:
 		herb_gather_panel.visible = true
+	if task_panel:
+		task_panel.visible = false
 	lianli_panel.visible = false
 	settings_panel.visible = false
 	if alchemy_module:
@@ -1274,6 +1318,28 @@ func show_herb_gather_panel():
 	tab_settings.disabled = false
 	if herb_gather_module:
 		herb_gather_module.show_tab()
+
+func show_task_panel():
+	neishi_panel.visible = false
+	chuna_panel.visible = false
+	if region_panel:
+		region_panel.visible = false
+	if herb_gather_panel:
+		herb_gather_panel.visible = false
+	if task_panel:
+		task_panel.visible = true
+	lianli_panel.visible = false
+	settings_panel.visible = false
+	if alchemy_module:
+		alchemy_module.hide_alchemy_room()
+	tab_neishi.disabled = false
+	tab_chuna.disabled = false
+	if tab_region:
+		tab_region.disabled = true
+	tab_lianli.disabled = false
+	tab_settings.disabled = false
+	if task_module:
+		task_module.show_tab()
 
 func _on_tab_neishi_pressed():
 	show_neishi_tab()
@@ -1557,9 +1623,13 @@ func update_ui():
 	update_realm_background(status.realm)
 	
 	var stone_count = 0
+	var immortal_crystal_count = 0
 	if inventory:
 		stone_count = inventory.get_item_count("spirit_stone")
-	spirit_stone_label.text = UIUtils.format_display_number(float(stone_count))
+		immortal_crystal_count = inventory.get_item_count("immortal_crystal")
+	spirit_stone_label.text = "灵石: " + UIUtils.format_display_number(float(stone_count))
+	if immortal_crystal_label:
+		immortal_crystal_label.text = "仙晶: " + UIUtils.format_display_number(float(immortal_crystal_count))
 	
 	# 更新修炼面板显示（通过CultivationModule）
 	if cultivation_module:

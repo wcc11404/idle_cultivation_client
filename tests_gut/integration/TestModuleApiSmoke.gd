@@ -63,3 +63,13 @@ func test_module_api_smoke_flow():
 	var settings_module = harness.game_ui.settings_module
 	await settings_module._load_rank_data()
 	assert_gt(settings_module.rank_list.get_child_count(), 0, "设置 smoke 应能加载排行榜")
+
+	await harness.client.reset_account()
+	await harness.sync_full_state()
+	var use_pack = await harness.client.inventory_use("starter_pack")
+	assert_true(use_pack.get("success", false), "任务 smoke 需先完成新手礼包Ⅰ")
+	harness.game_ui.show_task_panel()
+	var task_module = harness.game_ui.task_module
+	await task_module._refresh_task_list()
+	await task_module._on_claim_pressed("newbie_open_starter_pack_1")
+	assert_true(harness.last_log().contains("领取成功"), "任务 smoke 应能完成领奖")

@@ -138,6 +138,10 @@ func lianli_simulate(area_id: String) -> Dictionary:
 	_count("lianli_simulate")
 	return await api.lianli_simulate(area_id)
 
+func lianli_speed_options() -> Dictionary:
+	_count("lianli_speed_options")
+	return await api.lianli_speed_options()
+
 func lianli_finish(speed: float, index = null) -> Dictionary:
 	_count("lianli_finish")
 	return await api.lianli_finish(speed, index)
@@ -165,6 +169,14 @@ func herb_report() -> Dictionary:
 func herb_stop() -> Dictionary:
 	_count("herb_stop")
 	return await api.herb_stop()
+
+func task_list() -> Dictionary:
+	_count("task_list")
+	return await api.task_list()
+
+func task_claim(task_id: String) -> Dictionary:
+	_count("task_claim")
+	return await api.task_claim(task_id)
 
 func change_nickname(new_nickname: String) -> Dictionary:
 	_count("change_nickname")

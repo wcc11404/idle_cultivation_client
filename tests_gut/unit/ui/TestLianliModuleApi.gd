@@ -14,6 +14,14 @@ class FakeLianliApi:
 	var network_manager := FakeLianliNetworkManager.new()
 	var simulate_calls: int = 0
 	var finish_calls: int = 0
+	var speed_options_calls: int = 0
+	var speed_options_result: Dictionary = {
+		"success": true,
+		"reason_code": "LIANLI_SPEED_OPTIONS_SUCCEEDED",
+		"reason_data": {},
+		"available_speeds": [1.0],
+		"default_speed": 1.0,
+	}
 
 	func _ready():
 		add_child(network_manager)
@@ -52,6 +60,10 @@ class FakeLianliApi:
 			"player_health_after": 100,
 			"area_id": area_id
 		}
+
+	func lianli_speed_options() -> Dictionary:
+		speed_options_calls += 1
+		return speed_options_result.duplicate(true)
 
 class CaptureFinishApi:
 	extends FakeLianliApi
@@ -246,3 +258,43 @@ func test_tower_reward_panel_shows_current_floor_reward_when_current_floor_is_re
 		"距离奖励层还需挑战 0 层（第5层）\n奖励：10灵石、3补血丹",
 		"当前挑战层本身就是奖励层时，应显示当前层奖励而不是下一奖励层"
 	)
+
+func test_lianli_speed_button_shows_block_message_when_only_default_speed_available():
+	var module = harness.game_ui.lianli_module
+	var fake_api = FakeLianliApi.new()
+	module.add_child(fake_api)
+	module.api = fake_api
+	fake_api.speed_options_result["available_speeds"] = [1.0]
+	harness.clear_logs()
+
+	await module.on_lianli_speed_pressed()
+
+	assert_eq(module.current_lianli_speed, 1.0, "仅有 1 倍速可用时不应切换")
+	assert_eq(harness.last_log(), "达到金丹境界以后可以开启1.5倍速，开通VIP可以开启2倍速", "仅默认倍速可用时应提示解锁条件")
+
+func test_lianli_speed_button_cycles_with_server_available_speeds():
+	var module = harness.game_ui.lianli_module
+	var fake_api = FakeLianliApi.new()
+	module.add_child(fake_api)
+	module.api = fake_api
+	fake_api.speed_options_result["available_speeds"] = [1.0, 1.5]
+
+	await module.on_lianli_speed_pressed()
+	assert_eq(module.current_lianli_speed, 1.5, "金丹可用 1.5 倍速时应从 1 切到 1.5")
+	assert_eq(module.lianli_speed_button.text, "历练速度: 1.5x", "按钮文案应更新为 1.5x")
+
+	await module.on_lianli_speed_pressed()
+	assert_eq(module.current_lianli_speed, 1.0, "可用集合仅 1 和 1.5 时应循环回 1")
+
+func test_lianli_speed_button_cycles_three_available_speeds():
+	var module = harness.game_ui.lianli_module
+	var fake_api = FakeLianliApi.new()
+	module.add_child(fake_api)
+	module.api = fake_api
+	fake_api.speed_options_result["available_speeds"] = [1.0, 1.5, 2.0]
+
+	await module.on_lianli_speed_pressed()
+	await module.on_lianli_speed_pressed()
+
+	assert_eq(module.current_lianli_speed, 2.0, "VIP 可用三档时应能切换到 2 倍速")
+	assert_eq(module.lianli_speed_button.text, "历练速度: 2x", "按钮文案应更新为 2x")

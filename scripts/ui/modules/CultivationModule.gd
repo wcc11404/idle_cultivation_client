@@ -39,7 +39,6 @@ var cultivation_figure_particles: TextureRect = null
 
 var _pending_elapsed_seconds: float = 0.0
 var _flush_in_flight: bool = false
-var _optimistic_health_regen_accumulator: float = 0.0
 var _optimistic_spell_use_accumulator: float = 0.0
 var _last_optimistic_update_at: float = 0.0
 var _optimistic_tick_accumulator: float = 0.0
@@ -118,11 +117,8 @@ func _apply_optimistic_whole_seconds_from_accumulator() -> void:
 		_apply_optimistic_progress(1.0)
 
 func _optimistic_heal_by_elapsed(elapsed_seconds: float):
-	var exact_regen = CULTIVATION_LOGIC.calculate_health_regen_per_second(player, _get_spell_system())
-	var before_whole = int(_optimistic_health_regen_accumulator)
-	_optimistic_health_regen_accumulator += exact_regen * elapsed_seconds
-	var after_whole = int(_optimistic_health_regen_accumulator)
-	var heal_gain = float(maxi(0, after_whole - before_whole))
+	var exact_regen: float = float(CULTIVATION_LOGIC.calculate_health_regen_per_second(player, _get_spell_system()))
+	var heal_gain: float = float(exact_regen * elapsed_seconds)
 	if heal_gain > 0.0:
 		player.heal(heal_gain)
 
@@ -533,7 +529,6 @@ func on_cultivate_button_pressed():
 		_last_optimistic_update_at = Time.get_unix_time_from_system()
 		_optimistic_tick_accumulator = 0.0
 		_next_auto_flush_at = Time.get_unix_time_from_system() + REPORT_INTERVAL_SECONDS
-		_optimistic_health_regen_accumulator = 0.0
 		_optimistic_spell_use_accumulator = 0.0
 		if game_ui and game_ui.has_method("set_active_mode"):
 			game_ui.set_active_mode("cultivation")
@@ -563,7 +558,6 @@ func _stop_cultivation_internal(by_failure: bool):
 		_pending_elapsed_seconds = 0.0
 		_last_optimistic_update_at = 0.0
 		_optimistic_tick_accumulator = 0.0
-		_optimistic_health_regen_accumulator = 0.0
 		_optimistic_spell_use_accumulator = 0.0
 		_next_auto_flush_at = 0.0
 		if game_ui and game_ui.has_method("clear_active_mode"):
@@ -628,7 +622,6 @@ func _settle_pending_optimistic_progress_now() -> void:
 func reset_local_runtime_state(clear_pending: bool = true) -> void:
 	_last_optimistic_update_at = 0.0
 	_optimistic_tick_accumulator = 0.0
-	_optimistic_health_regen_accumulator = 0.0
 	_optimistic_spell_use_accumulator = 0.0
 	_next_auto_flush_at = 0.0
 	_flush_in_flight = false
